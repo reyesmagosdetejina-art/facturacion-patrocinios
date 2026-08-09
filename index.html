@@ -677,6 +677,7 @@
       <div class="tab active" data-tab="nueva" onclick="switchTab('nueva')">Nueva factura</div>
       <div class="tab" data-tab="listado" onclick="switchTab('listado')">Listado por año</div>
       <div class="tab" data-tab="patrocinadores" onclick="switchTab('patrocinadores')">Patrocinadores</div>
+      <div class="tab" data-tab="herramientas" onclick="switchTab('herramientas')">Herramientas</div>
     </div>
 
     <!-- ---- NUEVA FACTURA ---- -->
@@ -898,6 +899,36 @@
             <div class="glyph">§</div>
             <p>Cargando patrocinadores…</p>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ---- HERRAMIENTAS ---- -->
+    <div class="panel" id="panel-herramientas">
+      <div class="card">
+        <h2>Cambiar contraseña de acceso</h2>
+        <p class="card-hint">La contraseña se guarda de forma segura en el servidor — nunca viaja en el código de la app.</p>
+
+        <div class="field">
+          <label for="pwchange-actual">Contraseña actual</label>
+          <input type="password" id="pwchange-actual" autocomplete="current-password">
+        </div>
+        <div class="field">
+          <label for="pwchange-nueva">Nueva contraseña</label>
+          <input type="password" id="pwchange-nueva" autocomplete="new-password" placeholder="Mínimo 6 caracteres">
+        </div>
+        <div class="field">
+          <label for="pwchange-repite">Repite la nueva contraseña</label>
+          <input type="password" id="pwchange-repite" autocomplete="new-password">
+        </div>
+
+        <p class="error-msg" id="pwchange-error" style="display:none;"></p>
+
+        <div class="actions-row" style="margin-top:16px;">
+          <button class="btn btn-gold" id="pwchange-btn" onclick="submitPasswordChange()">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <span id="pwchange-btn-label">Cambiar contraseña</span>
+          </button>
         </div>
       </div>
     </div>
@@ -1135,7 +1166,11 @@ const firebaseConfig = {
 // Se rellena tras desplegar functions/ (ver INSTRUCCIONES.md)
 const CLOUD_FUNCTION_URL = "https://europe-west1-san-silvestre-tejina.cloudfunctions.net/crearFacturaYEnviar";
 
-const APP_PASSWORD = "tejina^2000"; // Cambia esto si quieres una contraseña distinta a la del conversor de Gestasoc
+// URLs de las Cloud Functions de autenticación — la contraseña NUNCA vive
+// en este archivo: se verifica y se cambia en el servidor, que solo
+// responde true/false, sin exponer el valor real.
+const VERIFY_PASSWORD_URL = "https://europe-west1-san-silvestre-tejina.cloudfunctions.net/verificarPassword";
+const CHANGE_PASSWORD_URL = "https://europe-west1-san-silvestre-tejina.cloudfunctions.net/cambiarPassword";
 
 let app, db;
 let online = false;
@@ -1198,19 +1233,46 @@ async function checkInvoiceSync(){
 }
 
 // ---------------- LOGIN ----------------
-window.attemptLogin = function(){
+window.attemptLogin = async function(){
   const input = document.getElementById('pw-input');
   const err = document.getElementById('login-error');
-  if(input.value === APP_PASSWORD){
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app-screen').style.display = 'block';
-    sessionStorage.setItem('rmt-fact-auth', '1');
-    initAppData();
-    openWelcomeModal();
-  } else {
+  const btn = document.getElementById('login-btn');
+  const password = input.value;
+
+  if(!password) return;
+
+  btn.disabled = true;
+  const originalLabel = btn.textContent;
+  btn.innerHTML = '<span class="spinner"></span> Comprobando…';
+  err.style.display = 'none';
+
+  try{
+    const resp = await fetch(VERIFY_PASSWORD_URL, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ password })
+    });
+    const data = await resp.json();
+
+    if(data.ok){
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app-screen').style.display = 'block';
+      sessionStorage.setItem('rmt-fact-auth', '1');
+      initAppData();
+      openWelcomeModal();
+    } else {
+      err.textContent = 'Contraseña incorrecta. Inténtalo de nuevo.';
+      err.style.display = 'block';
+      input.value = '';
+      input.focus();
+    }
+  } catch(e){
+    console.error('Error verificando contraseña:', e);
+    err.textContent = 'No se pudo comprobar la contraseña. Revisa tu conexión e inténtalo de nuevo.';
     err.style.display = 'block';
-    input.value = '';
-    input.focus();
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
   }
 }
 document.getElementById('pw-input').addEventListener('keydown', (e) => {
@@ -1223,6 +1285,63 @@ window.logout = function(){
   document.getElementById('login-screen').style.display = 'flex';
   document.getElementById('pw-input').value = '';
   document.getElementById('pw-input').focus();
+}
+
+// ---------------- HERRAMIENTAS: CAMBIO DE CONTRASEÑA ----------------
+window.submitPasswordChange = async function(){
+  const actual = document.getElementById('pwchange-actual').value;
+  const nueva = document.getElementById('pwchange-nueva').value;
+  const repite = document.getElementById('pwchange-repite').value;
+  const errorEl = document.getElementById('pwchange-error');
+  const btn = document.getElementById('pwchange-btn');
+  const label = document.getElementById('pwchange-btn-label');
+
+  errorEl.style.display = 'none';
+
+  if(!actual || !nueva || !repite){
+    errorEl.textContent = 'Completa los tres campos.';
+    errorEl.style.display = 'block';
+    return;
+  }
+  if(nueva.length < 6){
+    errorEl.textContent = 'La nueva contraseña debe tener al menos 6 caracteres.';
+    errorEl.style.display = 'block';
+    return;
+  }
+  if(nueva !== repite){
+    errorEl.textContent = 'La nueva contraseña y su repetición no coinciden.';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  label.innerHTML = '<span class="spinner"></span> Cambiando…';
+
+  try{
+    const resp = await fetch(CHANGE_PASSWORD_URL, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ passwordActual: actual, passwordNueva: nueva })
+    });
+    const data = await resp.json();
+
+    if(resp.ok && data.ok){
+      showToast('Contraseña actualizada correctamente.');
+      document.getElementById('pwchange-actual').value = '';
+      document.getElementById('pwchange-nueva').value = '';
+      document.getElementById('pwchange-repite').value = '';
+    } else {
+      errorEl.textContent = data.error || 'No se pudo cambiar la contraseña.';
+      errorEl.style.display = 'block';
+    }
+  } catch(e){
+    console.error('Error cambiando contraseña:', e);
+    errorEl.textContent = 'Error de conexión. Inténtalo de nuevo.';
+    errorEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    label.textContent = 'Cambiar contraseña';
+  }
 }
 
 if(sessionStorage.getItem('rmt-fact-auth') === '1'){
