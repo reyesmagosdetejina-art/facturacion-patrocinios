@@ -52,6 +52,8 @@
     --overlay-bg: rgba(43,36,26,0.45);
     --login-border: var(--paper-line);
     --login-glow: 0 0 0 rgba(0,0,0,0);
+    --gold-btn-bg: var(--gold);
+    --gold-btn-hover: var(--gold-deep);
   }
   html[data-theme="dark"]{
     --paper:      #1C1812;
@@ -86,6 +88,8 @@
     --overlay-bg: rgba(0,0,0,0.72);
     --login-border: var(--gold-border);
     --login-glow: 0 0 32px -8px rgba(217,175,82,0.35);
+    --gold-btn-bg: #A8791F;
+    --gold-btn-hover: #8C6318;
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
@@ -174,8 +178,8 @@
   .btn-primary:disabled{opacity:0.5; cursor:not-allowed; box-shadow:none; transform:none;}
   .btn-ghost{background:transparent; color:var(--ink-soft); border:1px solid var(--paper-line); box-shadow:none;}
   .btn-ghost:hover{border-color:var(--ink-soft); color:var(--ink); box-shadow:0 2px 6px -2px rgba(43,36,26,0.15);}
-  .btn-gold{background:var(--gold); color:#fff;}
-  .btn-gold:hover{background:var(--gold-deep);}
+  .btn-gold{background:var(--gold-btn-bg); color:#fff;}
+  .btn-gold:hover{background:var(--gold-btn-hover);}
   .btn-danger{background:var(--danger-bg); color:#fff;}
   .btn-danger:hover{background:var(--danger-hover);}
   .btn-danger-outline{border-color:var(--wine-border); color:var(--wine); box-shadow:none;}
@@ -206,12 +210,12 @@
 
   /* Estado: paso activo — el que toca hacer ahora, máximo contraste */
   .step-btn.step-active{
-    background:var(--gold); color:#fff; border-color:var(--gold);
+    background:var(--gold-btn-bg); color:#fff; border-color:var(--gold-btn-bg);
     box-shadow:0 4px 14px -4px rgba(168,121,31,0.55);
     flex:1.3 1 0;
   }
   .step-btn.step-active .step-num{background:rgba(255,255,255,0.25); color:#fff;}
-  .step-btn.step-active:hover{background:var(--gold-deep); border-color:var(--gold-deep);}
+  .step-btn.step-active:hover{background:var(--gold-btn-hover); border-color:var(--gold-btn-hover);}
 
   /* Estado: paso ya completado — disponible para repetir, look "hecho" */
   .step-btn.step-done{
@@ -1200,9 +1204,13 @@ window.closeWelcomeModal = function(){
 }
 window.goToSectionFromWelcome = function(sectionName){
   closeWelcomeModal();
-  if(sectionName) switchTab(sectionName);
-  // sectionName === null → "Todas las secciones": solo cierra el modal y
-  // deja la vista tal como esté (por defecto, la pestaña "Nueva factura").
+  if(sectionName) {
+    switchTab(sectionName);
+  } else {
+    // "Todas las secciones": deja la vista tal como esté (por defecto,
+    // la pestaña "Nueva factura") y enfoca su primer campo igualmente.
+    document.getElementById('f-nombre').focus();
+  }
 }
 
 // ---------------- TEMA CLARO / OSCURO ----------------
@@ -1233,6 +1241,7 @@ window.switchTab = function(name){
   document.getElementById('panel-' + name).classList.add('active');
   if(name === 'listado') loadInvoices(currentYearFilter);
   if(name === 'patrocinadores') renderSponsorCards();
+  if(name === 'nueva') document.getElementById('f-nombre').focus();
 }
 
 // ---------------- TOAST ----------------
