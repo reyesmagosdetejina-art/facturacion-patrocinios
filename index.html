@@ -833,10 +833,16 @@
             <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             Zona de riesgo
           </summary>
-          <button class="btn btn-danger-outline" onclick="confirmDeleteInvoices('year')">
-            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
-            Eliminar todas las facturas de <span id="delete-year-label"></span>
-          </button>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn btn-danger-outline" onclick="confirmDeleteInvoices('year')">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+              Eliminar todas las facturas de <span id="delete-year-label"></span>
+            </button>
+            <button class="btn btn-danger-outline" onclick="confirmResetCounterOnly()">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><polyline points="3 3 3 8 8 8"/></svg>
+              Reiniciar contador de <span id="reset-only-year-label"></span> a 0
+            </button>
+          </div>
         </details>
 
         <div id="invoices-container">
@@ -1023,6 +1029,15 @@
     </p>
     <div id="delete-summary" style="background:var(--wine-surface); border:1px solid var(--wine-border); border-radius:var(--radius); padding:12px 14px; margin:14px 0; font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--wine); max-height:180px; overflow-y:auto;">
     </div>
+
+    <label id="reset-counter-option" style="display:none; align-items:flex-start; gap:10px; background:var(--error-surface); border:1px solid var(--wine-border); border-radius:var(--radius); padding:12px 14px; margin-bottom:14px; cursor:pointer;">
+      <input type="checkbox" id="reset-counter-checkbox" style="width:17px; height:17px; margin-top:2px; accent-color:var(--wine); flex-shrink:0;">
+      <span style="font-size:13px; line-height:1.5;">
+        <strong>También reiniciar el contador de numeración de <span id="reset-counter-year"></span> a 0.</strong><br>
+        <span style="color:var(--ink-soft);">La próxima factura de ese año empezará de nuevo en 001. Solo hazlo si estás seguro de que no quedan facturas reales con números ya asignados para ese año.</span>
+      </span>
+    </label>
+
     <p style="font-size:13px; color:var(--ink-soft);">Escribe <strong>ELIMINAR</strong> para confirmar:</p>
     <input type="text" id="delete-confirm-input" placeholder="ELIMINAR" style="margin-bottom:6px;">
     <div class="actions-row" style="margin-top:10px;">
@@ -1030,6 +1045,28 @@
         <span id="delete-confirm-btn-label">Eliminar definitivamente</span>
       </button>
       <button class="btn btn-ghost" onclick="closeDeleteConfirmModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de confirmación de reinicio de contador (independiente del borrado) -->
+<div class="modal-overlay" id="reset-counter-modal">
+  <div class="modal-box" style="max-width:420px; border-top:4px solid var(--wine);">
+    <h3 style="color:var(--wine);">⚠ Reiniciar contador</h3>
+    <p style="font-size:14px; line-height:1.6;">
+      Vas a reiniciar el contador de numeración de <strong id="reset-only-summary-year"></strong> a <strong>0</strong>.
+      La próxima factura que crees ese año empezará de nuevo en <strong>001</strong>.
+    </p>
+    <div style="background:var(--error-surface); border:1px solid var(--wine-border); border-radius:var(--radius); padding:12px 14px; margin:14px 0; font-size:13px; color:var(--wine);">
+      Si ya existen facturas con números de ese año, esto puede provocar que una factura nueva se cree con un número ya usado por otra existente. Solo hazlo si no quedan facturas reales de ese año.
+    </div>
+    <p style="font-size:13px; color:var(--ink-soft);">Escribe <strong>REINICIAR</strong> para confirmar:</p>
+    <input type="text" id="reset-counter-input" placeholder="REINICIAR" style="margin-bottom:6px;">
+    <div class="actions-row" style="margin-top:10px;">
+      <button class="btn btn-danger" id="reset-counter-confirm-btn" onclick="executeResetCounterOnly()" disabled>
+        <span id="reset-counter-confirm-label">Reiniciar contador</span>
+      </button>
+      <button class="btn btn-ghost" onclick="closeResetCounterModal()">Cancelar</button>
     </div>
   </div>
 </div>
@@ -2014,6 +2051,20 @@ window.confirmDeleteInvoices = function(mode){
   document.getElementById('delete-confirm-input').value = '';
   document.getElementById('delete-confirm-btn').disabled = true;
 
+  // La opción de reiniciar el contador solo tiene sentido cuando se borran
+  // TODAS las facturas del año (no una selección parcial, donde quedarían
+  // facturas reales con números ya asignados).
+  const resetOption = document.getElementById('reset-counter-option');
+  const resetCheckbox = document.getElementById('reset-counter-checkbox');
+  if(mode === 'year'){
+    document.getElementById('reset-counter-year').textContent = currentYearFilter;
+    resetOption.style.display = 'flex';
+    resetCheckbox.checked = false;
+  } else {
+    resetOption.style.display = 'none';
+    resetCheckbox.checked = false;
+  }
+
   document.getElementById('delete-confirm-modal').classList.add('show');
 }
 
@@ -2027,9 +2078,16 @@ window.closeDeleteConfirmModal = function(){
 document.getElementById('delete-confirm-input').addEventListener('input', (e) => {
   document.getElementById('delete-confirm-btn').disabled = e.target.value.trim().toUpperCase() !== 'ELIMINAR';
 });
+document.getElementById('reset-counter-input').addEventListener('input', (e) => {
+  document.getElementById('reset-counter-confirm-btn').disabled = e.target.value.trim().toUpperCase() !== 'REINICIAR';
+});
 
 window.executeDeleteInvoices = async function(){
   if(invoicesToDelete.length === 0) return;
+
+  const resetCounter = document.getElementById('reset-counter-checkbox').checked
+    && deleteMode === 'year';
+  const yearToReset = currentYearFilter;
 
   const btn = document.getElementById('delete-confirm-btn');
   const label = document.getElementById('delete-confirm-btn-label');
@@ -2049,16 +2107,54 @@ window.executeDeleteInvoices = async function(){
       await batch.commit();
     }
 
-    showToast(`${invoicesToDelete.length} factura${invoicesToDelete.length > 1 ? 's' : ''} eliminada${invoicesToDelete.length > 1 ? 's' : ''} correctamente.`);
+    if(resetCounter){
+      await setDoc(doc(db, 'contadores', String(yearToReset)), { ultimo: 0 });
+    }
+
+    const mensajeContador = resetCounter ? ` y el contador de ${yearToReset} reiniciado a 0` : '';
+    showToast(`${invoicesToDelete.length} factura${invoicesToDelete.length > 1 ? 's' : ''} eliminada${invoicesToDelete.length > 1 ? 's' : ''}${mensajeContador}.`);
     closeDeleteConfirmModal();
     clearInvoiceSelection();
     loadInvoices(currentYearFilter);
+    refreshNextNumberPreview();
 
   } catch(e){
     console.error(e);
     showToast('Error al eliminar las facturas: ' + e.message, true);
     btn.disabled = false;
     label.textContent = 'Eliminar definitivamente';
+  }
+}
+
+// ---------------- REINICIO INDEPENDIENTE DEL CONTADOR DE NUMERACIÓN ----------------
+window.confirmResetCounterOnly = function(){
+  document.getElementById('reset-only-summary-year').textContent = currentYearFilter;
+  document.getElementById('reset-only-year-label').textContent = currentYearFilter;
+  document.getElementById('reset-counter-input').value = '';
+  document.getElementById('reset-counter-confirm-btn').disabled = true;
+  document.getElementById('reset-counter-modal').classList.add('show');
+}
+window.closeResetCounterModal = function(){
+  document.getElementById('reset-counter-modal').classList.remove('show');
+}
+window.executeResetCounterOnly = async function(){
+  const year = currentYearFilter;
+  const btn = document.getElementById('reset-counter-confirm-btn');
+  const label = document.getElementById('reset-counter-confirm-label');
+  btn.disabled = true;
+  label.innerHTML = '<span class="spinner"></span> Reiniciando…';
+
+  try{
+    await setDoc(doc(db, 'contadores', String(year)), { ultimo: 0 });
+    showToast(`Contador de ${year} reiniciado a 0. La próxima factura empezará en ${year}/001.`);
+    closeResetCounterModal();
+    refreshNextNumberPreview();
+  }catch(e){
+    console.error(e);
+    showToast('Error al reiniciar el contador: ' + e.message, true);
+  }finally{
+    btn.disabled = false;
+    label.textContent = 'Reiniciar contador';
   }
 }
 
