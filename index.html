@@ -907,25 +907,28 @@
     <div class="panel" id="panel-herramientas">
       <div class="card">
         <h2>Cambiar contraseña de acceso</h2>
-        <p class="card-hint">La contraseña se guarda de forma segura en el servidor — nunca viaja en el código de la app.</p>
+        <div style="background:var(--pending-surface); border:1px solid var(--gold-border); border-radius:var(--radius); padding:12px 14px; margin-bottom:16px; font-size:13.5px; color:var(--gold-deep);">
+          Esta función todavía no está activa — pendiente de completar el despliegue de las Cloud Functions de seguridad. De momento, la contraseña de acceso sigue siendo <strong>tejina^2000</strong>, gestionada directamente en el código.
+        </div>
+        <p class="card-hint">Cuando se active, la contraseña se guardará de forma segura en el servidor — nunca viajará en el código de la app.</p>
 
         <div class="field">
           <label for="pwchange-actual">Contraseña actual</label>
-          <input type="password" id="pwchange-actual" autocomplete="current-password">
+          <input type="password" id="pwchange-actual" autocomplete="current-password" disabled>
         </div>
         <div class="field">
           <label for="pwchange-nueva">Nueva contraseña</label>
-          <input type="password" id="pwchange-nueva" autocomplete="new-password" placeholder="Mínimo 6 caracteres">
+          <input type="password" id="pwchange-nueva" autocomplete="new-password" placeholder="Mínimo 6 caracteres" disabled>
         </div>
         <div class="field">
           <label for="pwchange-repite">Repite la nueva contraseña</label>
-          <input type="password" id="pwchange-repite" autocomplete="new-password">
+          <input type="password" id="pwchange-repite" autocomplete="new-password" disabled>
         </div>
 
         <p class="error-msg" id="pwchange-error" style="display:none;"></p>
 
         <div class="actions-row" style="margin-top:16px;">
-          <button class="btn btn-gold" id="pwchange-btn" onclick="submitPasswordChange()">
+          <button class="btn btn-gold" id="pwchange-btn" onclick="submitPasswordChange()" disabled>
             <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             <span id="pwchange-btn-label">Cambiar contraseña</span>
           </button>
@@ -1166,11 +1169,13 @@ const firebaseConfig = {
 // Se rellena tras desplegar functions/ (ver INSTRUCCIONES.md)
 const CLOUD_FUNCTION_URL = "https://europe-west1-san-silvestre-tejina.cloudfunctions.net/crearFacturaYEnviar";
 
-// URLs de las Cloud Functions de autenticación — la contraseña NUNCA vive
-// en este archivo: se verifica y se cambia en el servidor, que solo
-// responde true/false, sin exponer el valor real.
-const VERIFY_PASSWORD_URL = "https://europe-west1-san-silvestre-tejina.cloudfunctions.net/verificarPassword";
-const CHANGE_PASSWORD_URL = "https://europe-west1-san-silvestre-tejina.cloudfunctions.net/cambiarPassword";
+// NOTA DE SEGURIDAD: esta contraseña está temporalmente de vuelta en el
+// código (visible para cualquiera con "Ver código fuente") porque el
+// despliegue de las Cloud Functions de autenticación (verificarPassword /
+// cambiarPassword) quedó pendiente. En cuanto se complete ese despliegue,
+// hay que volver a quitar esta línea y usar VERIFY_PASSWORD_URL en su
+// lugar — ver INSTRUCCIONES.md, sección "Contraseña de acceso segura".
+const APP_PASSWORD = "tejina^2000";
 
 let app, db;
 let online = false;
@@ -1233,46 +1238,20 @@ async function checkInvoiceSync(){
 }
 
 // ---------------- LOGIN ----------------
-window.attemptLogin = async function(){
+window.attemptLogin = function(){
   const input = document.getElementById('pw-input');
   const err = document.getElementById('login-error');
-  const btn = document.getElementById('login-btn');
-  const password = input.value;
-
-  if(!password) return;
-
-  btn.disabled = true;
-  const originalLabel = btn.textContent;
-  btn.innerHTML = '<span class="spinner"></span> Comprobando…';
-  err.style.display = 'none';
-
-  try{
-    const resp = await fetch(VERIFY_PASSWORD_URL, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ password })
-    });
-    const data = await resp.json();
-
-    if(data.ok){
-      document.getElementById('login-screen').style.display = 'none';
-      document.getElementById('app-screen').style.display = 'block';
-      sessionStorage.setItem('rmt-fact-auth', '1');
-      initAppData();
-      openWelcomeModal();
-    } else {
-      err.textContent = 'Contraseña incorrecta. Inténtalo de nuevo.';
-      err.style.display = 'block';
-      input.value = '';
-      input.focus();
-    }
-  } catch(e){
-    console.error('Error verificando contraseña:', e);
-    err.textContent = 'No se pudo comprobar la contraseña. Revisa tu conexión e inténtalo de nuevo.';
+  if(input.value === APP_PASSWORD){
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app-screen').style.display = 'block';
+    sessionStorage.setItem('rmt-fact-auth', '1');
+    initAppData();
+    openWelcomeModal();
+  } else {
+    err.textContent = 'Contraseña incorrecta. Inténtalo de nuevo.';
     err.style.display = 'block';
-  } finally {
-    btn.disabled = false;
-    btn.textContent = originalLabel;
+    input.value = '';
+    input.focus();
   }
 }
 document.getElementById('pw-input').addEventListener('keydown', (e) => {
