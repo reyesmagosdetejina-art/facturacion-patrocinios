@@ -192,6 +192,19 @@
   input.field-error:focus, select.field-error:focus{
     box-shadow:0 0 0 3px rgba(122,46,46,0.14);
   }
+
+  /* Buscadores con botón "×" para limpiar el campo */
+  .search-wrap{position:relative; display:flex; align-items:center;}
+  .search-wrap input{padding-right:34px;}
+  .search-clear{
+    position:absolute; right:10px; top:50%; transform:translateY(-50%);
+    background:none; border:none; cursor:pointer; padding:2px 4px;
+    color:var(--ink-soft); font-size:16px; line-height:1;
+    display:none; /* visible solo cuando hay texto */
+    border-radius:50%; transition:color .12s ease, background .12s ease;
+  }
+  .search-clear:hover{color:var(--ink); background:var(--hover-surface);}
+  .search-wrap.has-value .search-clear{display:block;}
   .btn{
     display:inline-flex; align-items:center; justify-content:center; gap:8px;
     padding:12px 22px; border:none; border-radius:var(--radius);
@@ -888,8 +901,11 @@
           </button>
         </div>
 
-        <div class="field" style="max-width:420px; position:relative;">
-          <input type="text" id="invoice-search" placeholder="Buscar por número, patrocinador, concepto, fecha, importe, estado…" oninput="onInvoiceSearchInput()">
+        <div class="field" style="max-width:420px;">
+          <div class="search-wrap" id="invoice-search-wrap">
+            <input type="text" id="invoice-search" placeholder="Buscar por número, patrocinador, concepto, fecha, importe, estado…" oninput="onInvoiceSearchInput(); updateSearchClear('invoice-search-wrap', this)">
+            <button class="search-clear" title="Limpiar búsqueda" onclick="clearSearch('invoice-search-wrap', 'invoice-search', 'invoice')">×</button>
+          </div>
         </div>
 
         <div class="selection-bar" id="invoices-bulk-bar" style="display:none;">
@@ -954,7 +970,10 @@
             <input type="checkbox" id="select-all-checkbox" onchange="toggleSelectAllSponsors(this.checked)">
             Seleccionar todos
           </label>
-          <input type="text" id="sponsor-search" placeholder="Buscar por nombre, CIF o email…" oninput="renderSponsorCards()">
+          <div class="search-wrap" id="sponsor-search-wrap">
+            <input type="text" id="sponsor-search" placeholder="Buscar por nombre, CIF o email…" oninput="renderSponsorCards(); updateSearchClear('sponsor-search-wrap', this)">
+            <button class="search-clear" title="Limpiar búsqueda" onclick="clearSearch('sponsor-search-wrap', 'sponsor-search', 'sponsor')">×</button>
+          </div>
           <button class="btn btn-gold" onclick="openSponsorModal()">
             <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>
             Nuevo patrocinador
@@ -1472,6 +1491,25 @@ window.switchTab = function(name){
 }
 
 // ---------------- TOAST ----------------
+// Muestra u oculta el botón "×" de limpiar según si el campo tiene texto
+function updateSearchClear(wrapId, inputEl){
+  const wrap = document.getElementById(wrapId);
+  if(!wrap) return;
+  wrap.classList.toggle('has-value', inputEl.value.length > 0);
+}
+
+// Limpia el campo de búsqueda y dispara el refresco correspondiente
+function clearSearch(wrapId, inputId, type){
+  const wrap = document.getElementById(wrapId);
+  const input = document.getElementById(inputId);
+  if(!wrap || !input) return;
+  input.value = '';
+  wrap.classList.remove('has-value');
+  input.focus();
+  if(type === 'invoice') onInvoiceSearchInput();
+  if(type === 'sponsor') renderSponsorCards();
+}
+
 function showToast(msg, isError=false){
   const t = document.getElementById('toast');
   t.textContent = msg;
