@@ -596,6 +596,31 @@
   /* ---------- ZONA DE RIESGO (acciones destructivas poco frecuentes, colapsadas) ---------- */
   .danger-zone{margin-bottom:18px;}
 
+  /* ---- ACORDEÓN DE HERRAMIENTAS ---- */
+  .herramienta{
+    border:1px solid var(--paper-line); border-radius:var(--radius);
+    background:var(--card); margin-bottom:12px; overflow:hidden;
+  }
+  .herramienta-header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 20px; cursor:pointer; user-select:none;
+    transition:background .15s ease;
+  }
+  .herramienta-header:hover{background:var(--hover-surface);}
+  .herramienta-title{
+    font-family:'Fraunces',serif; font-size:17px; font-weight:600;
+    color:var(--ink); margin:0;
+  }
+  .herramienta-chevron{
+    width:20px; height:20px; color:var(--ink-soft); flex-shrink:0;
+    transition:transform .2s ease;
+  }
+  .herramienta.open .herramienta-chevron{transform:rotate(180deg);}
+  .herramienta-body{
+    display:none; padding:0 20px 20px; border-top:1px solid var(--paper-line);
+  }
+  .herramienta.open .herramienta-body{display:block;}
+
   /* ---- PANEL DE INFORMES ---- */
   .informe-grid{
     display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:12px;
@@ -1193,49 +1218,61 @@
     <!-- ---- HERRAMIENTAS ---- -->
     <div class="panel" id="panel-herramientas">
       <div class="card">
-        <h2>Cambiar contraseña de acceso</h2>
-        <div style="background:var(--pending-surface); border:1px solid var(--gold-border); border-radius:var(--radius); padding:12px 14px; margin-bottom:16px; font-size:13.5px; color:var(--gold-deep);">
-          Esta función todavía no está activa — pendiente de completar el despliegue de las Cloud Functions de seguridad. De momento, la contraseña de acceso sigue siendo <strong>tejina^2000</strong>, gestionada directamente en el código.
-        </div>
-        <p class="card-hint">Cuando se active, la contraseña se guardará de forma segura en el servidor — nunca viajará en el código de la app.</p>
+        <h2 style="margin-bottom:20px;">Herramientas</h2>
 
-        <div class="field">
-          <label for="pwchange-actual">Contraseña actual</label>
-          <input type="password" id="pwchange-actual" autocomplete="current-password" disabled>
-        </div>
-        <div class="field">
-          <label for="pwchange-nueva">Nueva contraseña</label>
-          <input type="password" id="pwchange-nueva" autocomplete="new-password" placeholder="Mínimo 6 caracteres" disabled>
-        </div>
-        <div class="field">
-          <label for="pwchange-repite">Repite la nueva contraseña</label>
-          <input type="password" id="pwchange-repite" autocomplete="new-password" disabled>
+        <!-- Sección 1: Cambiar contraseña -->
+        <div class="herramienta" id="herr-password">
+          <div class="herramienta-header" onclick="toggleHerramienta('herr-password')">
+            <span class="herramienta-title">🔒 Cambiar contraseña de acceso</span>
+            <svg class="herramienta-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="herramienta-body">
+            <div style="background:var(--pending-surface); border:1px solid var(--gold-border); border-radius:var(--radius); padding:12px 14px; margin:16px 0; font-size:13.5px; color:var(--gold-deep);">
+              Esta función todavía no está activa — pendiente de completar el despliegue de las Cloud Functions de seguridad. De momento, la contraseña de acceso sigue siendo <strong>tejina^2000</strong>, gestionada directamente en el código.
+            </div>
+            <p class="card-hint">Cuando se active, la contraseña se guardará de forma segura en el servidor — nunca viajará en el código de la app.</p>
+            <div class="field">
+              <label for="pwchange-actual">Contraseña actual</label>
+              <input type="password" id="pwchange-actual" autocomplete="current-password" disabled>
+            </div>
+            <div class="field">
+              <label for="pwchange-nueva">Nueva contraseña</label>
+              <input type="password" id="pwchange-nueva" autocomplete="new-password" placeholder="Mínimo 6 caracteres" disabled>
+            </div>
+            <div class="field">
+              <label for="pwchange-repite">Repite la nueva contraseña</label>
+              <input type="password" id="pwchange-repite" autocomplete="new-password" disabled>
+            </div>
+            <p class="error-msg" id="pwchange-error" style="display:none;"></p>
+            <div class="actions-row" style="margin-top:16px;">
+              <button class="btn btn-gold" id="pwchange-btn" onclick="submitPasswordChange()" disabled>
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <span id="pwchange-btn-label">Cambiar contraseña</span>
+              </button>
+            </div>
+          </div>
         </div>
 
-        <p class="error-msg" id="pwchange-error" style="display:none;"></p>
-
-        <div class="actions-row" style="margin-top:16px;">
-          <button class="btn btn-gold" id="pwchange-btn" onclick="submitPasswordChange()" disabled>
-            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            <span id="pwchange-btn-label">Cambiar contraseña</span>
-          </button>
+        <!-- Sección 2: Resetear contadores -->
+        <div class="herramienta" id="herr-contadores">
+          <div class="herramienta-header" onclick="toggleHerramienta('herr-contadores')">
+            <span class="herramienta-title">🔄 Resetear contadores de facturas</span>
+            <svg class="herramienta-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="herramienta-body">
+            <p class="card-hint" style="margin-top:16px;">Borra los contadores de numeración correlativa de Firestore. Úsalo solo antes de pasar a producción, cuando las facturas creadas hasta ahora son pruebas. No borra las facturas en sí — solo reinicia la numeración.</p>
+            <div class="danger-zone" style="margin-top:16px;">
+              <p style="font-size:13px; color:var(--wine); margin-bottom:12px;">
+                <strong>⚠ Atención:</strong> Si ya tienes facturas reales emitidas, no uses esta opción — los nuevos números podrían repetir los ya emitidos.
+              </p>
+              <button class="btn btn-danger" onclick="confirmarResetContadores()">
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><polyline points="3 3 3 8 8 8"/></svg>
+                Resetear todos los contadores
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <!-- Tarjeta de reseteo de contadores — útil antes de pasar a producción -->
-      <div class="card" style="margin-top:24px;">
-        <h2>Resetear contadores de facturas</h2>
-        <p class="card-hint">Borra los contadores de numeración correlativa de Firestore. Úsalo solo antes de pasar a producción, cuando las facturas creadas hasta ahora son pruebas. No borra las facturas en sí — solo reinicia la numeración al año siguiente que se use.</p>
-
-        <div class="danger-zone" style="margin-top:16px;">
-          <p style="font-size:13px; color:var(--wine); margin-bottom:12px;">
-            <strong>⚠ Atención:</strong> Si ya tienes facturas reales emitidas, no uses esta opción — los nuevos números podrían repetir los ya emitidos.
-          </p>
-          <button class="btn btn-danger" onclick="confirmarResetContadores()">
-            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><polyline points="3 3 3 8 8 8"/></svg>
-            Resetear todos los contadores
-          </button>
-        </div>
       </div>
     </div>
 
@@ -1259,7 +1296,7 @@
     </div>
   </main>
 
-  <footer class="foot">Asociación Cultural Reyes Magos de Tejina — Registro interno de patrocinios <span style="opacity:0.45; font-size:11px; font-family:'IBM Plex Mono',monospace; margin-left:12px;">v002</span></footer>
+  <footer class="foot">Asociación Cultural Reyes Magos de Tejina — Registro interno de patrocinios <span style="opacity:0.45; font-size:11px; font-family:'IBM Plex Mono',monospace; margin-left:12px;">v001</span></footer>
 </div>
 
 <!-- Modal alta/edición de patrocinador -->
@@ -1597,6 +1634,13 @@ window.logout = function(){
 }
 
 // ---------------- HERRAMIENTAS: CAMBIO DE CONTRASEÑA ----------------
+// ---------------- HERRAMIENTAS: ACORDEÓN ----------------
+window.toggleHerramienta = function(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.classList.toggle('open');
+}
+
 // ---------------- HERRAMIENTAS: RESETEO DE CONTADORES ----------------
 window.confirmarResetContadores = function(){
   document.getElementById('reset-contadores-confirm').value = '';
