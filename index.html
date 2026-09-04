@@ -535,6 +535,8 @@
   .sponsor-card .sp-line{font-size:13px; color:var(--ink-soft); margin:2px 0;}
   .sponsor-card .sp-mono{font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--gold-deep);}
   .sponsor-card .sp-actions{position:absolute; top:16px; right:16px; display:flex; gap:6px;}
+  .icon-btn-whatsapp{color:#25D366 !important;}
+  .icon-btn-whatsapp:hover{border-color:#25D366 !important; color:#128C7E !important;}
 
   /* ---------- PÍLDORA DE RENOVACIÓN DEL PATROCINIO (San Silvestre y otros) ---------- */
   .renov-pill{
@@ -821,7 +823,7 @@
       </div>
     </div>
     <div style="display:flex; align-items:center; gap:18px;">
-      <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#FFFFFF; opacity:0.55; letter-spacing:0.05em; background:rgba(255,255,255,0.08); padding:3px 8px; border-radius:4px;">v004</span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#FFFFFF; opacity:0.55; letter-spacing:0.05em; background:rgba(255,255,255,0.08); padding:3px 8px; border-radius:4px;">v005</span>
       <span class="conn-status" id="conn-status-pill" title="Comprobando sincronización…"><span class="conn-dot" id="conn-dot"></span><span id="conn-text">Comprobando…</span><span class="sync-count" id="sync-count"></span></span>
       <button class="welcome-reopen-btn" onclick="openWelcomeModal()" title="Ir a una sección">
         <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
@@ -1657,7 +1659,38 @@ window.logout = function(){
 }
 
 // ---------------- HERRAMIENTAS: CAMBIO DE CONTRASEÑA ----------------
-// ---------------- HERRAMIENTAS: ACORDEÓN ----------------
+// ---------------- WHATSAPP PATROCINIO ----------------
+window.abrirWhatsappPatrocinio = function(telefono){
+  // Limpiar el teléfono: quitar espacios, guiones y paréntesis
+  const tel = telefono.replace(/[\s\-\(\)]/g, '');
+  // Añadir prefijo internacional si empieza por 6 o 7 (España)
+  const telInt = tel.startsWith('+') ? tel : (tel.startsWith('00') ? '+' + tel.slice(2) : '+34' + tel);
+
+  const mensaje = `¡Hola a todos nuestros colaboradores y patrocinadores!
+
+Con gran entusiasmo, nos dirigimos a ustedes, nuestros patrocinadores y colaboradores, para anunciar una nueva edición de la San Silvestre 2026. Como en años anteriores, la carrera se llevará a cabo el próximo sábado, 26 de diciembre, en la emblemática plaza de Tejina. Por tal motivo, necesitamos nos diga si está conforme en participar en la ayuda social y la defensa de nuestras tradiciones populares.
+
+Nuestro enfoque principal sigue siendo la solidaridad. La San Silvestre 2026 estará dedicada a apoyar a las personas con necesidades. Para asegurar que todos los detalles de su participación sean correctos, les pedimos que nos envíen la siguiente información si ha habido algún cambio con respecto a años anteriores:
+
+• Razón Social
+• Nombre Comercial
+• Logotipo (en formato de alta calidad)
+
+Agradecemos de antemano su inestimable apoyo, que hace posible que un evento tan especial y solidario como este se celebre año tras año.
+¡Contamos con ustedes para hacer de esta San Silvestre 2026 un gran éxito!
+
+El coste es el mismo que el del año anterior 100€
+
+Esperamos vuestras respuestas y conformidad de participar en nuestro correo adjunto (reyesmagosdetejina@gmail.com).
+
+Un cordial saludo,
+
+La Presidenta
+Juana Ibys Hernández Gómez`;
+
+  const url = `https://wa.me/${telInt}?text=${encodeURIComponent(mensaje)}`;
+  window.open(url, '_blank');
+}
 window.toggleHerramienta = function(id){
   const el = document.getElementById(id);
   if(!el) return;
@@ -3281,6 +3314,9 @@ window.renderSponsorCards = function(){
       <input type="checkbox" class="sponsor-checkbox" ${checked} onchange="toggleSponsorSelection('${s.id}', this.checked)">
       <div class="sp-actions">
         <button class="icon-btn" title="Editar" onclick="openSponsorModal('${s.id}')">✎</button>
+        ${s.telefono ? `<button class="icon-btn icon-btn-whatsapp" title="Enviar WhatsApp de patrocinio" onclick="abrirWhatsappPatrocinio('${s.telefono.replace(/\s+/g, '')}')">
+          <svg viewBox="0 0 24 24" fill="currentColor" style="width:15px;height:15px;"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.99 0C5.373 0 0 5.373 0 11.99c0 2.117.555 4.1 1.523 5.823L0 24l6.335-1.493A11.943 11.943 0 0 0 11.99 24C18.606 24 24 18.626 24 11.99 24 5.373 18.606 0 11.99 0zm0 21.818a9.808 9.808 0 0 1-5.001-1.371l-.359-.214-3.721.876.893-3.633-.234-.374A9.789 9.789 0 0 1 2.18 11.99c0-5.414 4.396-9.81 9.81-9.81 5.413 0 9.81 4.396 9.81 9.81 0 5.414-4.397 9.828-9.81 9.828z"/></svg>
+        </button>` : ''}
         <button class="icon-btn" title="Eliminar" onclick="deleteSponsor('${s.id}')">✕</button>
       </div>
       <p class="sp-name"><span class="sp-number">${String(posicion).padStart(3,'0')}</span> ${s.nombre}</p>
