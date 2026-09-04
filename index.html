@@ -792,7 +792,18 @@
     <p class="subtitle">Asoc. Cultural Reyes Magos de Tejina</p>
     <div class="field">
       <label for="pw-input">Contraseña de acceso</label>
-      <input type="password" id="pw-input" placeholder="••••••••" autocomplete="current-password" autofocus>
+      <div class="search-wrap" style="width:100%;">
+        <input type="password" id="pw-input" placeholder="••••••••" autocomplete="current-password" autofocus style="padding-right:40px;">
+        <button type="button" id="pw-toggle" title="Mostrar/ocultar contraseña"
+          onclick="togglePwVisibility()"
+          style="position:absolute; right:10px; top:50%; transform:translateY(-50%);
+                 background:none; border:none; cursor:pointer; padding:4px;
+                 color:var(--ink-soft); display:flex; align-items:center;">
+          <svg id="pw-eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+      </div>
     </div>
     <button class="btn btn-primary" id="login-btn" onclick="attemptLogin()">Entrar</button>
     <p class="error-msg" id="login-error">Contraseña incorrecta. Inténtalo de nuevo.</p>
@@ -810,6 +821,7 @@
       </div>
     </div>
     <div style="display:flex; align-items:center; gap:18px;">
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#FFFFFF; opacity:0.55; letter-spacing:0.05em; background:rgba(255,255,255,0.08); padding:3px 8px; border-radius:4px;">v004</span>
       <span class="conn-status" id="conn-status-pill" title="Comprobando sincronización…"><span class="conn-dot" id="conn-dot"></span><span id="conn-text">Comprobando…</span><span class="sync-count" id="sync-count"></span></span>
       <button class="welcome-reopen-btn" onclick="openWelcomeModal()" title="Ir a una sección">
         <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
@@ -1296,7 +1308,7 @@
     </div>
   </main>
 
-  <footer class="foot">Asociación Cultural Reyes Magos de Tejina — Registro interno de patrocinios <span style="opacity:0.45; font-size:11px; font-family:'IBM Plex Mono',monospace; margin-left:12px;">v001</span></footer>
+  <footer class="foot">Asociación Cultural Reyes Magos de Tejina — Registro interno de patrocinios</footer>
 </div>
 
 <!-- Modal alta/edición de patrocinador -->
@@ -1605,6 +1617,17 @@ async function checkInvoiceSync(){
 }
 
 // ---------------- LOGIN ----------------
+window.togglePwVisibility = function(){
+  const input = document.getElementById('pw-input');
+  const icon = document.getElementById('pw-eye-icon');
+  const visible = input.type === 'text';
+  input.type = visible ? 'password' : 'text';
+  // Cambiar icono: ojo abierto ↔ ojo tachado
+  icon.innerHTML = visible
+    ? '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>'
+    : '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
+}
+
 window.attemptLogin = function(){
   const input = document.getElementById('pw-input');
   const err = document.getElementById('login-error');
