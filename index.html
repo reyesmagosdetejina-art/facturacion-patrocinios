@@ -553,6 +553,10 @@
   table.sponsors .sp-acc{display:flex; gap:6px; justify-content:flex-start; flex-wrap:nowrap;}
   table.sponsors .renov-pill{white-space:nowrap;}
   table.sponsors input[type=checkbox]{width:17px; height:17px; accent-color:var(--gold); cursor:pointer; vertical-align:middle;}
+  #update-banner{position:fixed; left:50%; bottom:20px; transform:translateX(-50%); z-index:9999; display:none; align-items:center; gap:14px; background:var(--ink); color:var(--paper); padding:12px 18px; border-radius:var(--radius); box-shadow:0 8px 24px -6px rgba(0,0,0,0.45); font-size:13px; max-width:92vw;}
+  #update-banner.show{display:flex;}
+  #update-banner button{background:var(--gold); color:#fff; border:none; border-radius:var(--radius); padding:7px 14px; cursor:pointer; font:inherit; font-weight:600;}
+  #update-banner .ub-x{background:transparent; color:var(--paper); opacity:0.7; padding:4px 8px;}
   .icon-btn-mail{color:#2563EB !important;}
   .icon-btn-mail:hover{border-color:#2563EB !important;}
   @media (max-width:900px){ table.sponsors th.hide-m, table.sponsors td.hide-m{display:none;} }
@@ -844,7 +848,7 @@
       </div>
     </div>
     <div style="display:flex; align-items:center; gap:18px;">
-      <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#FFFFFF; opacity:0.55; letter-spacing:0.05em; background:rgba(255,255,255,0.08); padding:3px 8px; border-radius:4px;">v008</span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#FFFFFF; opacity:0.55; letter-spacing:0.05em; background:rgba(255,255,255,0.08); padding:3px 8px; border-radius:4px;">v009</span>
       <span class="conn-status" id="conn-status-pill" title="Comprobando sincronización…"><span class="conn-dot" id="conn-dot"></span><span id="conn-text">Comprobando…</span><span class="sync-count" id="sync-count"></span></span>
       <button class="welcome-reopen-btn" onclick="openWelcomeModal()" title="Ir a una sección">
         <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
@@ -1365,6 +1369,8 @@
   </div>
 </div>
 
+<div id="update-banner"><span id="update-banner-text">Hay una versión nueva disponible.</span><button onclick="recargarNuevaVersion()">Actualizar</button><button class="ub-x" onclick="document.getElementById('update-banner').classList.remove('show')" title="Cerrar">✕</button></div>
+
 <!-- Modal email patrocinio -->
 <div class="modal-overlay" id="email-modal">
   <div class="modal-box" style="max-width:640px;">
@@ -1875,6 +1881,38 @@ window.submitPasswordChange = async function(){
     label.textContent = 'Cambiar contraseña';
   }
 }
+
+
+// ---------------- AVISO DE NUEVA VERSIÓN ----------------
+let versionNuevaDetectada = null;
+function versionActual(){
+  const el = [...document.querySelectorAll('header span')].find(x => /^v\d{3}$/.test(x.textContent.trim()));
+  return el ? parseInt(el.textContent.trim().slice(1), 10) : null;
+}
+window.recargarNuevaVersion = function(){
+  const base = location.origin + location.pathname;
+  location.replace(base + '?v=' + (versionNuevaDetectada || Date.now()));
+};
+async function comprobarNuevaVersion(){
+  try{
+    const actual = versionActual();
+    if(actual === null) return;
+    const r = await fetch(location.pathname + '?_=' + Date.now(), {cache:'no-store'});
+    if(!r.ok) return;
+    const txt = await r.text();
+    const m = txt.match(/>v(\d{3})</);
+    if(!m) return;
+    const remota = parseInt(m[1], 10);
+    if(remota > actual){
+      versionNuevaDetectada = remota;
+      document.getElementById('update-banner-text').textContent = `Hay una versión nueva disponible (v${m[1]}).`;
+      document.getElementById('update-banner').classList.add('show');
+    }
+  }catch(e){ /* sin conexión: se ignora */ }
+}
+setTimeout(comprobarNuevaVersion, 4000);
+setInterval(comprobarNuevaVersion, 5*60*1000);
+document.addEventListener('visibilitychange', () => { if(!document.hidden) comprobarNuevaVersion(); });
 
 // Se ejecuta al final del módulo (setTimeout) para que todas las funciones ya estén definidas
 setTimeout(() => {
