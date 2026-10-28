@@ -557,6 +557,17 @@
   #update-banner.show{display:flex;}
   #update-banner button{background:var(--gold); color:#fff; border:none; border-radius:var(--radius); padding:7px 14px; cursor:pointer; font:inherit; font-weight:600;}
   #update-banner .ub-x{background:transparent; color:var(--paper); opacity:0.7; padding:4px 8px;}
+  .sp-filter{width:auto !important; flex:0 0 auto; padding:9px 10px; border:1.5px solid var(--paper-line); border-radius:var(--radius); background:var(--card); color:var(--ink); font:inherit; font-size:13px; cursor:pointer;}
+  .sp-filter:focus{outline:none; border-color:var(--gold);}
+  .pg-pill{display:inline-block; white-space:nowrap; font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; letter-spacing:0.03em; text-transform:uppercase; padding:5px 10px; border-radius:999px;}
+  .pg-pagada{background:#DDEBDD; color:#2F5D34;}
+  .pg-pendiente{background:#F6E0C4; color:#8A4B0B;}
+  .pg-sinfacturar{background:#E8E1D2; color:#6B5B3E;}
+  .pg-nofactura{background:transparent; color:var(--ink-soft); border:1px dashed var(--paper-line);}
+  .tag-sinfactura{display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:#6B5B3E; background:#E8E1D2; padding:2px 7px; border-radius:10px; margin-left:6px; vertical-align:middle;}
+  :root[data-theme="dark"] .pg-pagada{background:#24402A; color:#A9D8AF;}
+  :root[data-theme="dark"] .pg-pendiente{background:#4A3418; color:#F0C48A;}
+  :root[data-theme="dark"] .pg-sinfacturar, :root[data-theme="dark"] .tag-sinfactura{background:#3A342A; color:#CBBE9F;}
   .icon-btn-mail{color:#2563EB !important;}
   .icon-btn-mail:hover{border-color:#2563EB !important;}
   @media (max-width:900px){ table.sponsors th.hide-m, table.sponsors td.hide-m{display:none;} }
@@ -848,7 +859,7 @@
       </div>
     </div>
     <div style="display:flex; align-items:center; gap:18px;">
-      <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#FFFFFF; opacity:0.55; letter-spacing:0.05em; background:rgba(255,255,255,0.08); padding:3px 8px; border-radius:4px;">v009</span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#FFFFFF; opacity:0.55; letter-spacing:0.05em; background:rgba(255,255,255,0.08); padding:3px 8px; border-radius:4px;">v010</span>
       <span class="conn-status" id="conn-status-pill" title="Comprobando sincronización…"><span class="conn-dot" id="conn-dot"></span><span id="conn-text">Comprobando…</span><span class="sync-count" id="sync-count"></span></span>
       <button class="welcome-reopen-btn" onclick="openWelcomeModal()" title="Ir a una sección">
         <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
@@ -1127,6 +1138,19 @@
             <input type="text" id="sponsor-search" placeholder="Buscar por nombre, CIF o email…" oninput="renderSponsorCards(); updateSearchClear('sponsor-search-wrap', this)">
             <button class="search-clear" title="Limpiar búsqueda" onclick="clearSearch('sponsor-search-wrap', 'sponsor-search', 'sponsor')">×</button>
           </div>
+          <select id="sponsor-filter-renov" class="sp-filter" onchange="renderSponsorCards()" title="Filtrar por renovación">
+            <option value="todos">Renovación: todas</option>
+            <option value="sin_respuesta">Sin respuesta</option>
+            <option value="confirmado">Confirmado</option>
+            <option value="declinado">Declinado</option>
+          </select>
+          <select id="sponsor-filter-pago" class="sp-filter" onchange="renderSponsorCards()" title="Filtrar por pago">
+            <option value="todos">Pago: todos</option>
+            <option value="pagada">Factura pagada</option>
+            <option value="pendiente">Factura no pagada</option>
+            <option value="sinfacturar">Sin facturar este año</option>
+            <option value="nofactura">No lleva factura</option>
+          </select>
           <button class="btn btn-gold" onclick="openSponsorModal()">
             <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>
             Nuevo patrocinador
@@ -1361,6 +1385,13 @@
     <div class="field">
       <label for="sp-telefono">Teléfono (opcional)</label>
       <input type="tel" id="sp-telefono">
+    </div>
+    <div class="field">
+      <label style="display:flex; align-items:center; gap:8px; cursor:pointer; text-transform:none; letter-spacing:0;">
+        <input type="checkbox" id="sp-facturable" checked style="width:17px; height:17px; accent-color:var(--gold);">
+        Lleva factura (se le cobra el patrocinio)
+      </label>
+      <div style="font-size:12px; color:var(--ink-soft); margin-top:4px;">Desmárcalo si colabora de otra forma y no se le factura.</div>
     </div>
     <div class="actions-row" style="margin-top:8px;">
       <button class="btn btn-gold" onclick="saveSponsorFromModal()">Guardar</button>
@@ -1969,7 +2000,10 @@ window.switchTab = function(name){
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.getElementById('panel-' + name).classList.add('active');
   if(name === 'listado') loadInvoices(currentYearFilter);
-  if(name === 'patrocinadores') renderSponsorCards();
+  if(name === 'patrocinadores'){
+    renderSponsorCards();
+    if(allInvoicesCache.length === 0) loadInvoices().then(() => renderSponsorCards());
+  }
   if(name === 'nueva') document.getElementById('f-nombre').focus();
   if(name === 'informes') loadInformes();
 }
@@ -3280,7 +3314,7 @@ async function loadSponsors(){
 }
 
 // Crea o actualiza un patrocinador cuando se emite una factura a su nombre.
-async function upsertSponsor({ nombre, cif, direccion, email, telefono }){
+async function upsertSponsor({ nombre, cif, direccion, email, telefono, facturable }){
   if(!nombre) return;
   try{
     const id = sponsorDocId(nombre);
@@ -3288,6 +3322,7 @@ async function upsertSponsor({ nombre, cif, direccion, email, telefono }){
     const existing = sponsorsCache.find(s => s.id === id);
     await setDoc(ref, {
       nombre, cif, direccion, email, telefono: telefono || '',
+      ...(facturable === undefined ? {} : { facturable }),
       actualizadoEn: serverTimestamp(),
       ...(existing ? {} : { creadoEn: serverTimestamp() })
     }, { merge: true });
@@ -3382,13 +3417,40 @@ window.fillFromSponsor = function(id){
 }
 
 // ---------------- PESTAÑA PATROCINADORES: LISTADO / BÚSQUEDA ----------------
+// Estado de renovación vigente (se reinicia solo cada año natural)
+function renovacionVigenteDe(s){
+  return s.renovacionAnio === new Date().getFullYear() ? (s.renovacionEstado || 'sin_respuesta') : 'sin_respuesta';
+}
+
+// Estado de pago del año en curso, según las facturas emitidas al patrocinador
+// (se enlazan por CIF si lo hay, y si no por nombre).
+// Devuelve: 'nofactura' | 'sinfacturar' | 'pendiente' | 'pagada'
+function estadoPagoDe(s){
+  if(s.facturable === false) return 'nofactura';
+  const anio = new Date().getFullYear();
+  const norm = x => String(x || '').replace(/[\s\-\.]/g,'').toLowerCase();
+  const cifS = norm(s.cif), idS = sponsorDocId(s.nombre || '');
+  const facturas = (typeof allInvoicesCache !== 'undefined' ? allInvoicesCache : []).filter(inv => {
+    if(inv.anio !== anio) return false;
+    const p = inv.patrocinador || {};
+    if(cifS && norm(p.cif) === cifS) return true;
+    return sponsorDocId(p.nombre || '') === idS;
+  });
+  if(facturas.length === 0) return 'sinfacturar';
+  return facturas.every(f => f.pagada) ? 'pagada' : 'pendiente';
+}
+
 function getFilteredSponsors(){
   const term = document.getElementById('sponsor-search').value.trim().toLowerCase();
+  const fRenov = document.getElementById('sponsor-filter-renov')?.value || 'todos';
+  const fPago = document.getElementById('sponsor-filter-pago')?.value || 'todos';
   return sponsorsCache.filter(s =>
-    !term ||
-    (s.nombre||'').toLowerCase().includes(term) ||
-    (s.cif||'').toLowerCase().includes(term) ||
-    (s.email||'').toLowerCase().includes(term)
+    (!term ||
+      (s.nombre||'').toLowerCase().includes(term) ||
+      (s.cif||'').toLowerCase().includes(term) ||
+      (s.email||'').toLowerCase().includes(term)) &&
+    (fRenov === 'todos' || renovacionVigenteDe(s) === fRenov) &&
+    (fPago === 'todos' || estadoPagoDe(s) === fPago)
   );
 }
 
@@ -3406,13 +3468,13 @@ window.renderSponsorCards = function(){
   const list = getFilteredSponsors();
 
   if(list.length === 0){
-    container.innerHTML = `<div class="empty-state"><div class="glyph">§</div><p>${sponsorsCache.length === 0 ? 'Todavía no hay patrocinadores registrados.' : 'Sin resultados para esa búsqueda.'}</p></div>`;
+    container.innerHTML = `<div class="empty-state"><div class="glyph">§</div><p>${sponsorsCache.length === 0 ? 'Todavía no hay patrocinadores registrados.' : 'Sin resultados para esa búsqueda o filtros.'}</p></div>`;
     syncSelectAllCheckbox(list);
     return;
   }
 
   container.innerHTML = `<div class="table-wrap-sp"><table class="sponsors"><thead><tr>
-    <th style="width:40px;"></th><th style="width:60px;">Nº</th><th>Patrocinador</th><th style="width:26%;">Contacto</th><th style="width:200px;">Renovación</th><th style="width:150px;"></th></tr></thead><tbody>${list.map(s => {
+    <th style="width:40px;"></th><th style="width:60px;">Nº</th><th>Patrocinador</th><th style="width:26%;">Contacto</th><th style="width:190px;">Renovación</th><th style="width:130px;">Pago</th><th style="width:150px;"></th></tr></thead><tbody>${list.map(s => {
     const posicion = sponsorsCache.indexOf(s) + 1;
     const checked = selectedSponsorIds.has(s.id) ? 'checked' : '';
     const anioActual = new Date().getFullYear();
@@ -3422,14 +3484,22 @@ window.renderSponsorCards = function(){
       confirmado:    { clase: 'renov-confirmado',    texto: 'Confirmado',    tooltip: `Confirmó que sigue con el patrocinio en ${anioActual}. Clic para marcar como declinado.` },
       declinado:     { clase: 'renov-declinado',     texto: 'Declinado',     tooltip: `Dijo que NO sigue con el patrocinio en ${anioActual}. Clic para volver a "sin respuesta".` }
     }[renovacionVigente];
+    const pagoEstado = estadoPagoDe(s);
+    const pagoPill = {
+      pagada:      '<span class="pg-pill pg-pagada" title="Todas las facturas de este año están cobradas">Pagada</span>',
+      pendiente:   '<span class="pg-pill pg-pendiente" title="Tiene facturas de este año sin cobrar">No pagada</span>',
+      sinfacturar: '<span class="pg-pill pg-sinfacturar" title="Todavía no tiene factura este año">Sin facturar</span>',
+      nofactura:   '<span class="pg-pill pg-nofactura" title="Colabora sin factura">No factura</span>'
+    }[pagoEstado];
     const wa = esMovil(s.telefono) ? `<button class="icon-btn icon-btn-whatsapp" title="Enviar WhatsApp de patrocinio" onclick="abrirWhatsappPatrocinio('${s.telefono.replace(/\s+/g, '')}')"><svg viewBox="0 0 24 24" fill="currentColor" style="width:15px;height:15px;"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.99 0C5.373 0 0 5.373 0 11.99c0 2.117.555 4.1 1.523 5.823L0 24l6.335-1.493A11.943 11.943 0 0 0 11.99 24C18.606 24 24 18.626 24 11.99 24 5.373 18.606 0 11.99 0zm0 21.818a9.808 9.808 0 0 1-5.001-1.371l-.359-.214-3.721.876.893-3.633-.234-.374A9.789 9.789 0 0 1 2.18 11.99c0-5.414 4.396-9.81 9.81-9.81 5.413 0 9.81 4.396 9.81 9.81 0 5.414-4.397 9.828-9.81 9.828z"/></svg></button>` : '<span style="width:30px;height:30px;display:inline-block;"></span>';
     const mail = s.email ? `<button class="icon-btn icon-btn-mail" title="Enviar correo de patrocinio" onclick="abrirEmailPatrocinio('${s.id}')">✉</button>` : '<span style="width:30px;height:30px;display:inline-block;"></span>';
     return `<tr>
       <td><input type="checkbox" ${checked} onchange="toggleSponsorSelection('${s.id}', this.checked)"></td>
       <td><span class="sp-number">${String(posicion).padStart(3,'0')}</span></td>
-      <td><div class="sp-nombre" title="${s.nombre}">${s.nombre}</div><div class="sp-sub"><span class="sp-mono">${s.cif || 'sin CIF'}</span></div>${s.direccion ? `<div class="sp-dir" title="${s.direccion}">${s.direccion}</div>` : ''}</td>
+      <td><div class="sp-nombre" title="${s.nombre}">${s.nombre}</div><div class="sp-sub"><span class="sp-mono">${s.cif || 'sin CIF'}</span>${s.facturable === false ? '<span class="tag-sinfactura">Sin factura</span>' : ''}</div>${s.direccion ? `<div class="sp-dir" title="${s.direccion}">${s.direccion}</div>` : ''}</td>
       <td><div class="sp-email" title="${s.email || ''}">${s.email || '—'}</div><div class="sp-sub">${s.telefono || ''}</div></td>
       <td><button class="renov-pill ${renovacionInfo.clase}" onclick="cycleRenovacion('${s.id}')" title="${renovacionInfo.tooltip}"><span class="renov-dot"></span>${renovacionInfo.texto} ${anioActual}</button></td>
+      <td>${pagoPill}</td>
       <td><div class="sp-acc">
         <button class="icon-btn" title="Editar" onclick="openSponsorModal('${s.id}')">✎</button>
         ${wa}${mail}
@@ -3488,7 +3558,14 @@ window.openBulkInvoiceModal = function(){
   document.getElementById('bulk-fecha').valueAsDate = new Date();
 
   const rowsContainer = document.getElementById('bulk-rows-container');
-  const selected = sponsorsCache.filter(s => selectedSponsorIds.has(s.id));
+  const todos = sponsorsCache.filter(s => selectedSponsorIds.has(s.id));
+  const selected = todos.filter(s => s.facturable !== false);
+  const excluidos = todos.length - selected.length;
+  if(selected.length === 0){
+    showToast('Los patrocinadores seleccionados no llevan factura.', true);
+    return;
+  }
+  if(excluidos > 0) showToast(`${excluidos} patrocinador${excluidos > 1 ? 'es' : ''} sin factura excluido${excluidos > 1 ? 's' : ''} de la facturación.`);
 
   rowsContainer.innerHTML = selected.map(s => `
     <div class="bulk-row" data-sponsor-id="${s.id}">
@@ -3653,6 +3730,7 @@ window.openSponsorModal = function(id){
   document.getElementById('sp-direccion').value = s?.direccion || '';
   document.getElementById('sp-email').value = s?.email || '';
   document.getElementById('sp-telefono').value = s?.telefono || '';
+  document.getElementById('sp-facturable').checked = s ? s.facturable !== false : true;
   document.getElementById('sponsor-modal').classList.add('show');
 }
 window.closeSponsorModal = function(){
@@ -3665,6 +3743,7 @@ window.saveSponsorFromModal = async function(){
   const direccion = document.getElementById('sp-direccion').value.trim();
   const email = document.getElementById('sp-email').value.trim();
   const telefono = document.getElementById('sp-telefono').value.trim();
+  const facturable = document.getElementById('sp-facturable').checked;
 
   const spNombreEl = document.getElementById('sp-nombre');
   if(!nombre){
@@ -3684,7 +3763,7 @@ window.saveSponsorFromModal = async function(){
         await deleteDoc(doc(db, 'patrocinadores', editingSponsorId));
       }
     }
-    await upsertSponsor({ nombre, cif, direccion, email, telefono });
+    await upsertSponsor({ nombre, cif, direccion, email, telefono, facturable });
     renderSponsorCards();
     closeSponsorModal();
     showToast('Patrocinador guardado correctamente.');
