@@ -859,7 +859,7 @@
       </div>
     </div>
     <div style="display:flex; align-items:center; gap:18px;">
-      <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#FFFFFF; opacity:0.55; letter-spacing:0.05em; background:rgba(255,255,255,0.08); padding:3px 8px; border-radius:4px;">v010</span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#FFFFFF; opacity:0.55; letter-spacing:0.05em; background:rgba(255,255,255,0.08); padding:3px 8px; border-radius:4px;">v011</span>
       <span class="conn-status" id="conn-status-pill" title="Comprobando sincronización…"><span class="conn-dot" id="conn-dot"></span><span id="conn-text">Comprobando…</span><span class="sync-count" id="sync-count"></span></span>
       <button class="welcome-reopen-btn" onclick="openWelcomeModal()" title="Ir a una sección">
         <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
@@ -3449,7 +3449,7 @@ function getFilteredSponsors(){
       (s.nombre||'').toLowerCase().includes(term) ||
       (s.cif||'').toLowerCase().includes(term) ||
       (s.email||'').toLowerCase().includes(term)) &&
-    (fRenov === 'todos' || renovacionVigenteDe(s) === fRenov) &&
+    (fRenov === 'todos' || (s.facturable !== false && renovacionVigenteDe(s) === fRenov)) &&
     (fPago === 'todos' || estadoPagoDe(s) === fPago)
   );
 }
@@ -3498,7 +3498,7 @@ window.renderSponsorCards = function(){
       <td><span class="sp-number">${String(posicion).padStart(3,'0')}</span></td>
       <td><div class="sp-nombre" title="${s.nombre}">${s.nombre}</div><div class="sp-sub"><span class="sp-mono">${s.cif || 'sin CIF'}</span>${s.facturable === false ? '<span class="tag-sinfactura">Sin factura</span>' : ''}</div>${s.direccion ? `<div class="sp-dir" title="${s.direccion}">${s.direccion}</div>` : ''}</td>
       <td><div class="sp-email" title="${s.email || ''}">${s.email || '—'}</div><div class="sp-sub">${s.telefono || ''}</div></td>
-      <td><button class="renov-pill ${renovacionInfo.clase}" onclick="cycleRenovacion('${s.id}')" title="${renovacionInfo.tooltip}"><span class="renov-dot"></span>${renovacionInfo.texto} ${anioActual}</button></td>
+      <td>${s.facturable === false ? '<span class="pg-pill pg-nofactura" title="Colabora sin factura: no aplica la renovación">Sin factura</span>' : `<button class="renov-pill ${renovacionInfo.clase}" onclick="cycleRenovacion('${s.id}')" title="${renovacionInfo.tooltip}"><span class="renov-dot"></span>${renovacionInfo.texto} ${anioActual}</button>`}</td>
       <td>${pagoPill}</td>
       <td><div class="sp-acc">
         <button class="icon-btn" title="Editar" onclick="openSponsorModal('${s.id}')">✎</button>
