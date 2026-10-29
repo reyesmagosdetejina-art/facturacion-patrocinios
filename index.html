@@ -859,7 +859,7 @@
       </div>
     </div>
     <div style="display:flex; align-items:center; gap:18px;">
-      <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#FFFFFF; opacity:0.55; letter-spacing:0.05em; background:rgba(255,255,255,0.08); padding:3px 8px; border-radius:4px;">v014</span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#FFFFFF; opacity:0.55; letter-spacing:0.05em; background:rgba(255,255,255,0.08); padding:3px 8px; border-radius:4px;">v015</span>
       <span class="conn-status" id="conn-status-pill" title="Comprobando sincronización…"><span class="conn-dot" id="conn-dot"></span><span id="conn-text">Comprobando…</span><span class="sync-count" id="sync-count"></span></span>
       <button class="welcome-reopen-btn" onclick="openWelcomeModal()" title="Ir a una sección">
         <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
@@ -1151,6 +1151,10 @@
             <option value="sinfacturar">Sin facturar este año</option>
             <option value="nofactura">No lleva factura</option>
           </select>
+          <button class="btn btn-ghost" id="sponsor-filter-reset" onclick="resetFiltrosPatrocinadores()" title="Quitar la búsqueda y los filtros">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+            Restablecer filtros
+          </button>
           <button class="btn btn-gold" onclick="openSponsorModal()">
             <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>
             Nuevo patrocinador
@@ -3458,6 +3462,15 @@ function getFilteredSponsors(){
     (fPago === 'todos' || estadoPagoDe(s) === fPago)
   );
 }
+
+window.resetFiltrosPatrocinadores = function(){
+  const buscador = document.getElementById('sponsor-search');
+  buscador.value = '';
+  document.getElementById('sponsor-filter-renov').value = 'todos';
+  document.getElementById('sponsor-filter-pago').value = 'todos';
+  updateSearchClear('sponsor-search-wrap', buscador);
+  renderSponsorCards();
+};
 
 window.renderSponsorCards = function(){
   const container = document.getElementById('sponsors-container');
