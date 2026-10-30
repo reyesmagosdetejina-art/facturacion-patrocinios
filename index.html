@@ -682,6 +682,15 @@
   .informe-kpi.kpi-rojo{border-color:var(--wine-border); background:var(--wine-surface);}
   .informe-kpi.kpi-rojo .kpi-valor{color:var(--wine);}
 
+  .informe-kpi .kpi-sub{font-size:11.5px; color:var(--ink-soft); margin-top:6px; min-height:14px;}
+  .informe-kpi .kpi-bar{height:6px; border-radius:999px; background:rgba(0,0,0,0.08); margin-top:10px; overflow:hidden;}
+  .informe-kpi .kpi-bar > span{display:block; height:100%; border-radius:999px; background:currentColor; transition:width .4s ease;}
+  .informe-kpi.kpi-verde .kpi-bar{color:var(--renov-confirmado-fg);}
+  .informe-kpi.kpi-naranja .kpi-bar{color:var(--pago-pendiente-bg);}
+  .informe-kpi.kpi-rojo .kpi-bar{color:var(--wine);}
+  .informe-kpi:not(.kpi-verde):not(.kpi-naranja):not(.kpi-rojo) .kpi-bar{color:var(--ink-soft);}
+  .informe-actions{display:flex; gap:10px; margin-left:auto; flex-wrap:wrap;}
+
   /* Tabla compacta de pendientes */
   .informe-table{width:100%; border-collapse:collapse; font-size:13px; margin-top:4px;}
   .informe-table th{font-family:'IBM Plex Mono',monospace; font-size:10px; text-transform:uppercase;
@@ -859,7 +868,7 @@
       </div>
     </div>
     <div style="display:flex; align-items:center; gap:18px;">
-      <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#FFFFFF; opacity:0.55; letter-spacing:0.05em; background:rgba(255,255,255,0.08); padding:3px 8px; border-radius:4px;">v015</span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#FFFFFF; opacity:0.55; letter-spacing:0.05em; background:rgba(255,255,255,0.08); padding:3px 8px; border-radius:4px;">v016</span>
       <span class="conn-status" id="conn-status-pill" title="Comprobando sincronización…"><span class="conn-dot" id="conn-dot"></span><span id="conn-text">Comprobando…</span><span class="sync-count" id="sync-count"></span></span>
       <button class="welcome-reopen-btn" onclick="openWelcomeModal()" title="Ir a una sección">
         <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
@@ -1201,6 +1210,10 @@
         <div style="display:flex; align-items:center; gap:10px; margin-bottom:24px;">
           <span style="font-size:13px; color:var(--ink-soft); font-family:'IBM Plex Mono',monospace; text-transform:uppercase; letter-spacing:0.06em;">Año</span>
           <div id="informes-year-chips" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
+          <div class="informe-actions">
+            <button class="btn btn-ghost" onclick="loadInformes(true)" title="Volver a leer los datos">↻ Actualizar</button>
+            <button class="btn btn-gold" onclick="generarInformeCampanaPdf()" title="Abrir el informe en PDF">Informe PDF</button>
+          </div>
         </div>
 
         <!-- Bloque 1: Resumen del año -->
@@ -1273,6 +1286,10 @@
           <div class="informe-kpi" id="kpi-sin-respuesta">
             <div class="kpi-valor">—</div>
             <div class="kpi-label">Sin respuesta</div>
+          </div>
+          <div class="informe-kpi" id="kpi-sin-factura">
+            <div class="kpi-valor">—</div>
+            <div class="kpi-label">No llevan factura</div>
           </div>
         </div>
 
@@ -2019,10 +2036,23 @@ window.switchTab = function(name){
 // ---------------- PANEL DE INFORMES ----------------
 let informesAnioActual = new Date().getFullYear();
 
-async function loadInformes(){
-  // Construir chips de año (años con facturas)
-  const años = [...new Set(invoicesCache.map(i => i.anio || new Date(i.fecha).getFullYear()))].sort((a,b) => b-a);
-  if(!años.includes(informesAnioActual) && años.length > 0) informesAnioActual = años[0];
+let ultimoInforme = null;
+
+async function loadInformes(refrescar){
+  // Las facturas se leen siempre de allInvoicesCache (todas, de todos los años);
+  // antes se usaba la lista filtrada del listado y salía vacía si no se había visitado.
+  if(refrescar || allInvoicesCache.length === 0){
+    await loadInvoices();
+  }
+  if(refrescar || sponsorsCache.length === 0){
+    await loadSponsors();
+  }
+
+  const anioDe = i => i.anio || (i.fecha ? new Date(i.fecha).getFullYear() : 0);
+  const años = [...new Set(allInvoicesCache.map(anioDe))].filter(Boolean).sort((a,b) => b-a);
+  const anioHoy = new Date().getFullYear();
+  if(!años.includes(anioHoy)) años.unshift(anioHoy);
+  if(!años.includes(informesAnioActual)) informesAnioActual = años.includes(anioHoy) ? anioHoy : años[0];
 
   const chipsEl = document.getElementById('informes-year-chips');
   if(chipsEl){
@@ -2034,52 +2064,52 @@ async function loadInformes(){
   const anio = informesAnioActual;
   document.getElementById('informes-anio-label').textContent = anio;
 
-  // Filtrar facturas del año seleccionado
-  const facturas = invoicesCache.filter(i => {
-    const a = i.anio || (i.fecha ? new Date(i.fecha).getFullYear() : 0);
-    return a === anio;
-  });
+  const facturas = allInvoicesCache.filter(i => anioDe(i) === anio);
+  const pct = (n, t) => t > 0 ? Math.round(n * 100 / t) : 0;
 
-  // ---- Bloque 1: Resumen ----
+  // ---- Resumen ----
   const totalFacturado = facturas.reduce((s, i) => s + (i.total || 0), 0);
   const totalCobrado = facturas.filter(i => i.pagada).reduce((s, i) => s + (i.total || 0), 0);
   const totalPendiente = totalFacturado - totalCobrado;
+  const nFact = facturas.length;
 
-  kpi('kpi-total-facturado', `${formatCurrency(totalFacturado)} €`);
-  kpi('kpi-num-facturas', facturas.length);
-  kpi('kpi-cobrado', `${formatCurrency(totalCobrado)} €`);
-  kpi('kpi-pendiente-cobro', `${formatCurrency(totalPendiente)} €`);
-
-  // ---- Bloque 2: Estado de envío ----
+  // ---- Envío y cobro ----
   const enviadas = facturas.filter(i => i.estado === 'enviada').length;
   const noEnviadas = facturas.filter(i => !i.estado || i.estado === 'pendiente').length;
   const errorEnvio = facturas.filter(i => i.estado === 'error').length;
-  kpi('kpi-enviadas', enviadas);
-  kpi('kpi-no-enviadas', noEnviadas);
-  kpi('kpi-error-envio', errorEnvio);
-
-  // ---- Bloque 3: Estado de cobro ----
   const cobradas = facturas.filter(i => i.pagada).length;
-  const pendientesPago = facturas.filter(i => !i.pagada).length;
-  kpi('kpi-cobradas', cobradas);
-  kpi('kpi-pendientes-pago', pendientesPago);
+  const pendientesPago = nFact - cobradas;
 
-  // ---- Bloque 4: Renovación de patrocinadores ----
-  try{
-    const sponsorsSnap = await getDocs(collection(db, 'patrocinadores'));
-    const sponsors = sponsorsSnap.docs.map(d => d.data());
-    const confirmados = sponsors.filter(s => s.renovacionAnio === anio && s.renovacionEstado === 'confirmado').length;
-    const declinados = sponsors.filter(s => s.renovacionAnio === anio && s.renovacionEstado === 'declinado').length;
-    const sinRespuesta = sponsors.length - confirmados - declinados;
-    kpi('kpi-confirmados', confirmados);
-    kpi('kpi-declinados', declinados);
-    kpi('kpi-sin-respuesta', sinRespuesta);
-  } catch(e){
-    console.error('Error cargando patrocinadores para informe:', e);
-  }
+  // ---- Renovación (solo patrocinadores que llevan factura) ----
+  const facturables = sponsorsCache.filter(sp => sp.facturable !== false);
+  const sinFactura = sponsorsCache.length - facturables.length;
+  const confirmados = facturables.filter(sp => sp.renovacionAnio === anio && sp.renovacionEstado === 'confirmado').length;
+  const declinados = facturables.filter(sp => sp.renovacionAnio === anio && sp.renovacionEstado === 'declinado').length;
+  const sinRespuesta = facturables.length - confirmados - declinados;
 
-  // ---- Bloque 5: Listado de pendientes de cobro ----
+  kpi('kpi-total-facturado', `${formatCurrency(totalFacturado)} €`, nFact ? `${nFact} factura${nFact !== 1 ? 's' : ''}` : 'Sin facturas este año');
+  kpi('kpi-num-facturas', nFact, nFact ? `Media ${formatCurrency(totalFacturado / nFact)} €` : '');
+  kpi('kpi-cobrado', `${formatCurrency(totalCobrado)} €`, `${pct(totalCobrado, totalFacturado)}% del total`, pct(totalCobrado, totalFacturado));
+  kpi('kpi-pendiente-cobro', `${formatCurrency(totalPendiente)} €`, `${pct(totalPendiente, totalFacturado)}% del total`, pct(totalPendiente, totalFacturado));
+
+  kpi('kpi-enviadas', enviadas, `${pct(enviadas, nFact)}% de las facturas`, pct(enviadas, nFact));
+  kpi('kpi-no-enviadas', noEnviadas, `${pct(noEnviadas, nFact)}% de las facturas`, pct(noEnviadas, nFact));
+  kpi('kpi-error-envio', errorEnvio, `${pct(errorEnvio, nFact)}% de las facturas`, pct(errorEnvio, nFact));
+
+  kpi('kpi-cobradas', cobradas, `${pct(cobradas, nFact)}% de las facturas`, pct(cobradas, nFact));
+  kpi('kpi-pendientes-pago', pendientesPago, `${pct(pendientesPago, nFact)}% de las facturas`, pct(pendientesPago, nFact));
+
+  kpi('kpi-confirmados', confirmados, `${pct(confirmados, facturables.length)}% de ${facturables.length}`, pct(confirmados, facturables.length));
+  kpi('kpi-declinados', declinados, `${pct(declinados, facturables.length)}% de ${facturables.length}`, pct(declinados, facturables.length));
+  kpi('kpi-sin-respuesta', sinRespuesta, `${pct(sinRespuesta, facturables.length)}% de ${facturables.length}`, pct(sinRespuesta, facturables.length));
+  kpi('kpi-sin-factura', sinFactura, 'Colaboran sin factura');
+
+  // ---- Listado de pendientes de cobro ----
   const pendientes = facturas.filter(i => !i.pagada).sort((a,b) => (a.numero || '').localeCompare(b.numero || ''));
+
+  ultimoInforme = { anio, totalFacturado, totalCobrado, totalPendiente, nFact, enviadas, noEnviadas, errorEnvio,
+    cobradas, pendientesPago, confirmados, declinados, sinRespuesta, sinFactura, nFacturables: facturables.length, pendientes };
+
   const tablaEl = document.getElementById('informe-pendientes-tabla');
   if(!tablaEl) return;
 
@@ -2114,14 +2144,166 @@ async function loadInformes(){
       </tbody>
     </table>
     <p style="margin-top:10px; font-size:12px; color:var(--ink-soft); font-family:'IBM Plex Mono',monospace;">
-      ${pendientes.length} factura${pendientes.length !== 1 ? 's' : ''} pendiente${pendientes.length !== 1 ? 's' : ''} · 
+      ${pendientes.length} factura${pendientes.length !== 1 ? 's' : ''} pendiente${pendientes.length !== 1 ? 's' : ''} ·
       Total: ${formatCurrency(pendientes.reduce((s,i) => s + (i.total||0), 0))} €
     </p>`;
 }
+window.loadInformes = loadInformes;
 
-function kpi(id, valor){
+// ---------------- INFORME PDF DE LA CAMPAÑA (pestaña Informes) ----------------
+window.generarInformeCampanaPdf = async function(){
+  if(!ultimoInforme) await loadInformes();
+  const d = ultimoInforme;
+  if(!d){ showToast('No se pudieron cargar los datos del informe.', true); return; }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:'pt', format:'a4' });
+  const PW = 595, PH = 842, M = 40, CW = PW - 2*M;
+  const TINTA=[40,34,26], GRIS=[110,100,88], GRANATE=[122,46,46], FONDO=[245,237,217], LINEA=[221,210,185];
+  const TONOS = {
+    neutro:  { fondo:[250,246,238], borde:[221,210,185], texto:[40,34,26] },
+    verde:   { fondo:[226,236,224], borde:[110,160,115], texto:[47,93,52] },
+    naranja: { fondo:[251,238,222], borde:[225,160,90],  texto:[190,100,15] },
+    rojo:    { fondo:[250,236,234], borde:[205,150,145], texto:[122,46,46] }
+  };
+  const pct = (n,t) => t > 0 ? Math.round(n*100/t) : 0;
+  const fechaTxt = new Date().toLocaleDateString('es-ES', { day:'2-digit', month:'long', year:'numeric' });
+
+  function pie(){
+    const total = doc.getNumberOfPages();
+    for(let i=1;i<=total;i++){
+      doc.setPage(i);
+      doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...GRIS);
+      doc.text('Asociación Cultural Reyes Magos de Tejina · Registro interno de patrocinios', M, PH-24);
+      doc.text(`Página ${i} de ${total}`, PW-M, PH-24, { align:'right' });
+    }
+  }
+  function seccion(titulo, y){
+    doc.setFont('helvetica','bold'); doc.setFontSize(9.5); doc.setTextColor(...GRANATE);
+    doc.text(titulo.toUpperCase(), M, y);
+    doc.setDrawColor(...LINEA); doc.line(M, y+5, M+CW, y+5);
+    return y + 16;
+  }
+  // Fila de tarjetas: [{valor,label,tono,sub,porcentaje}]
+  function fila(tarjetas, y, alto){
+    const gap = 10, w = (CW - gap*(tarjetas.length-1)) / tarjetas.length;
+    tarjetas.forEach((t,i) => {
+      const x = M + i*(w+gap), c = TONOS[t.tono || 'neutro'];
+      doc.setFillColor(...c.fondo); doc.setDrawColor(...c.borde); doc.setLineWidth(0.8);
+      doc.roundedRect(x, y, w, alto, 5, 5, 'FD');
+      doc.setFont('helvetica','bold'); doc.setFontSize(t.grande ? 19 : 22); doc.setTextColor(...c.texto);
+      doc.text(String(t.valor), x + w/2, y + 30, { align:'center' });
+      doc.setFont('helvetica','bold'); doc.setFontSize(7.5); doc.setTextColor(...GRIS);
+      doc.text(t.label.toUpperCase(), x + w/2, y + 44, { align:'center' });
+      if(t.sub){ doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.text(t.sub, x + w/2, y + 56, { align:'center' }); }
+      if(t.porcentaje !== undefined){
+        const bx = x + 14, bw = w - 28, by = y + alto - 14;
+        doc.setFillColor(225,218,200); doc.roundedRect(bx, by, bw, 4, 2, 2, 'F');
+        if(t.porcentaje > 0){ doc.setFillColor(...c.texto); doc.roundedRect(bx, by, Math.max(4, bw*t.porcentaje/100), 4, 2, 2, 'F'); }
+      }
+    });
+    return y + alto + 18;
+  }
+
+  // Cabecera
+  const lw = 64, lh = lw*(867/1055);
+  doc.addImage(ESCUDO_BASE64, 'PNG', M, 32, lw, lh);
+  doc.setFont('helvetica','bold'); doc.setFontSize(18); doc.setTextColor(...TINTA);
+  doc.text(`Informe de campaña ${d.anio}`, M+lw+16, 54);
+  doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(...GRANATE);
+  doc.text('ASOCIACIÓN CULTURAL REYES MAGOS DE TEJINA', M+lw+16, 70);
+  doc.setFontSize(9); doc.setTextColor(...GRIS);
+  doc.text('Patrocinios', M+lw+16, 84);
+  doc.text(`Generado el ${fechaTxt}`, PW-M, 54, { align:'right' });
+  let y = 32 + lh + 24;
+
+  const eur = n => `${formatCurrency(n)} €`;
+  y = seccion('Resumen del año', y);
+  y = fila([
+    { valor:eur(d.totalFacturado), label:'Total facturado', grande:true, sub: d.nFact ? `${d.nFact} factura${d.nFact!==1?'s':''}` : '' },
+    { valor:d.nFact, label:'Facturas emitidas', sub: d.nFact ? `Media ${eur(d.totalFacturado/d.nFact)}` : '' },
+    { valor:eur(d.totalCobrado), label:'Importe cobrado', tono:'verde', grande:true, sub:`${pct(d.totalCobrado,d.totalFacturado)}% del total`, porcentaje:pct(d.totalCobrado,d.totalFacturado) },
+    { valor:eur(d.totalPendiente), label:'Pendiente de cobro', tono:'naranja', grande:true, sub:`${pct(d.totalPendiente,d.totalFacturado)}% del total`, porcentaje:pct(d.totalPendiente,d.totalFacturado) }
+  ], y, 82);
+
+  y = seccion('Estado de envío por email', y);
+  y = fila([
+    { valor:d.enviadas, label:'Enviadas', tono:'verde', sub:`${pct(d.enviadas,d.nFact)}% de las facturas`, porcentaje:pct(d.enviadas,d.nFact) },
+    { valor:d.noEnviadas, label:'Sin enviar', tono:'naranja', sub:`${pct(d.noEnviadas,d.nFact)}% de las facturas`, porcentaje:pct(d.noEnviadas,d.nFact) },
+    { valor:d.errorEnvio, label:'Error de envío', tono:'rojo', sub:`${pct(d.errorEnvio,d.nFact)}% de las facturas`, porcentaje:pct(d.errorEnvio,d.nFact) }
+  ], y, 82);
+
+  y = seccion('Estado de cobro', y);
+  y = fila([
+    { valor:d.cobradas, label:'Cobradas', tono:'verde', sub:`${pct(d.cobradas,d.nFact)}% de las facturas`, porcentaje:pct(d.cobradas,d.nFact) },
+    { valor:d.pendientesPago, label:'Pendientes de cobro', tono:'naranja', sub:`${pct(d.pendientesPago,d.nFact)}% de las facturas`, porcentaje:pct(d.pendientesPago,d.nFact) }
+  ], y, 82);
+
+  y = seccion(`Renovación de patrocinadores ${d.anio}`, y);
+  y = fila([
+    { valor:d.confirmados, label:'Confirmados', tono:'verde', sub:`${pct(d.confirmados,d.nFacturables)}% de ${d.nFacturables}`, porcentaje:pct(d.confirmados,d.nFacturables) },
+    { valor:d.declinados, label:'Declinados', tono:'rojo', sub:`${pct(d.declinados,d.nFacturables)}% de ${d.nFacturables}`, porcentaje:pct(d.declinados,d.nFacturables) },
+    { valor:d.sinRespuesta, label:'Sin respuesta', sub:`${pct(d.sinRespuesta,d.nFacturables)}% de ${d.nFacturables}`, porcentaje:pct(d.sinRespuesta,d.nFacturables) },
+    { valor:d.sinFactura, label:'No llevan factura', sub:'Colaboran sin factura' }
+  ], y, 82);
+
+  // Facturas pendientes de cobro
+  const cols = [ {t:'Nº factura', x:M+6}, {t:'Patrocinador', x:M+86}, {t:'Fecha', x:M+300}, {t:'Envío', x:M+375}, {t:'Importe', x:M+CW-6, right:true} ];
+  function cabTabla(yy){
+    doc.setFillColor(...FONDO); doc.rect(M, yy, CW, 20, 'F');
+    doc.setFont('helvetica','bold'); doc.setFontSize(8); doc.setTextColor(...GRIS);
+    cols.forEach(c => doc.text(c.t.toUpperCase(), c.x, yy+13, c.right ? {align:'right'} : undefined));
+    return yy + 20;
+  }
+  if(y > PH - 140){ doc.addPage(); y = M + 10; }
+  y = seccion('Facturas pendientes de cobro', y);
+  if(d.pendientes.length === 0){
+    doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(47,93,52);
+    doc.text(`Todas las facturas de ${d.anio} están cobradas.`, M, y+6);
+  } else {
+    y = cabTabla(y);
+    d.pendientes.forEach(inv => {
+      if(y + 22 > PH - 50){ doc.addPage(); y = M; y = cabTabla(y); }
+      const est = inv.estado === 'enviada' ? 'Enviada' : inv.estado === 'error' ? 'Error envío' : 'Sin enviar';
+      doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(168,121,31);
+      doc.text(String(inv.numero || '—'), cols[0].x, y+14);
+      doc.setFont('helvetica','normal'); doc.setTextColor(...TINTA);
+      doc.text(doc.splitTextToSize(inv.patrocinador?.nombre || '—', 205)[0], cols[1].x, y+14);
+      doc.text(String(formatDate(inv.fecha)), cols[2].x, y+14);
+      doc.setTextColor(...GRIS); doc.text(est, cols[3].x, y+14);
+      doc.setFont('helvetica','bold'); doc.setTextColor(...TINTA);
+      doc.text(eur(inv.total || 0), cols[4].x, y+14, { align:'right' });
+      doc.setDrawColor(...LINEA); doc.line(M, y+22, M+CW, y+22);
+      y += 22;
+    });
+    doc.setFont('helvetica','bold'); doc.setFontSize(9.5); doc.setTextColor(...TINTA);
+    doc.text(`${d.pendientes.length} factura${d.pendientes.length!==1?'s':''} pendiente${d.pendientes.length!==1?'s':''}  ·  Total: ${eur(d.pendientes.reduce((a,i)=>a+(i.total||0),0))}`, M+CW-6, y+18, { align:'right' });
+  }
+
+  pie();
+  const nombrePdf = `Informe-campana-${d.anio}-${new Date().toISOString().slice(0,10)}.pdf`;
+  doc.setProperties({ title: nombrePdf.replace('.pdf','') });
+  const url = URL.createObjectURL(doc.output('blob'));
+  if(!window.open(url, '_blank')){
+    doc.save(nombrePdf);
+    showToast('El navegador bloqueó la ventana del visor; se ha descargado el PDF.');
+  }
+};
+
+
+function kpi(id, valor, sub, porcentaje){
   const el = document.getElementById(id);
-  if(el) el.querySelector('.kpi-valor').textContent = valor;
+  if(!el) return;
+  el.querySelector('.kpi-valor').textContent = valor;
+  let subEl = el.querySelector('.kpi-sub');
+  if(!subEl){ subEl = document.createElement('div'); subEl.className = 'kpi-sub'; el.appendChild(subEl); }
+  subEl.textContent = sub || '';
+  let bar = el.querySelector('.kpi-bar');
+  if(porcentaje === undefined){ if(bar) bar.remove(); }
+  else {
+    if(!bar){ bar = document.createElement('div'); bar.className = 'kpi-bar'; bar.innerHTML = '<span></span>'; el.appendChild(bar); }
+    bar.firstChild.style.width = Math.max(0, Math.min(100, porcentaje)) + '%';
+  }
 }
 
 window.setInformesAnio = function(anio){
