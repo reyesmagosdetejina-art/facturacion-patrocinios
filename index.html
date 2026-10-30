@@ -868,7 +868,7 @@
       </div>
     </div>
     <div style="display:flex; align-items:center; gap:18px;">
-      <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#FFFFFF; opacity:0.55; letter-spacing:0.05em; background:rgba(255,255,255,0.08); padding:3px 8px; border-radius:4px;">v016</span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#FFFFFF; opacity:0.55; letter-spacing:0.05em; background:rgba(255,255,255,0.08); padding:3px 8px; border-radius:4px;">v017</span>
       <span class="conn-status" id="conn-status-pill" title="Comprobando sincronización…"><span class="conn-dot" id="conn-dot"></span><span id="conn-text">Comprobando…</span><span class="sync-count" id="sync-count"></span></span>
       <button class="welcome-reopen-btn" onclick="openWelcomeModal()" title="Ir a una sección">
         <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
@@ -2113,9 +2113,14 @@ async function loadInformes(refrescar){
   const tablaEl = document.getElementById('informe-pendientes-tabla');
   if(!tablaEl) return;
 
+  if(nFact === 0){
+    tablaEl.innerHTML = `<p style="color:var(--ink-soft); font-size:13.5px; font-family:'IBM Plex Mono',monospace;">
+      Todavía no se ha emitido ninguna factura en ${anio}.</p>`;
+    return;
+  }
   if(pendientes.length === 0){
     tablaEl.innerHTML = `<p style="color:var(--renov-confirmado-fg); font-size:13.5px; font-family:'IBM Plex Mono',monospace;">
-      ✓ Todas las facturas de ${anio} están cobradas.</p>`;
+      ✓ Las ${nFact} factura${nFact !== 1 ? 's emitidas' : ' emitida'} en ${anio} ${nFact !== 1 ? 'están cobradas' : 'está cobrada'}.</p>`;
     return;
   }
 
@@ -2257,9 +2262,12 @@ window.generarInformeCampanaPdf = async function(){
   }
   if(y > PH - 140){ doc.addPage(); y = M + 10; }
   y = seccion('Facturas pendientes de cobro', y);
-  if(d.pendientes.length === 0){
+  if(d.nFact === 0){
+    doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(...GRIS);
+    doc.text(`Todavía no se ha emitido ninguna factura en ${d.anio}.`, M, y+6);
+  } else if(d.pendientes.length === 0){
     doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(47,93,52);
-    doc.text(`Todas las facturas de ${d.anio} están cobradas.`, M, y+6);
+    doc.text(`Las ${d.nFact} factura${d.nFact!==1?'s emitidas':' emitida'} en ${d.anio} ${d.nFact!==1?'están cobradas':'está cobrada'}.`, M, y+6);
   } else {
     y = cabTabla(y);
     d.pendientes.forEach(inv => {
