@@ -446,6 +446,9 @@
   .status-error .status-dot{background:var(--dot-wine);}
 
   /* Tooltip personalizado (reemplaza el title nativo del navegador) */
+  button.status-pill{border:none; cursor:pointer; font:inherit; transition:transform .12s;}
+  button.status-pill:hover{transform:scale(1.12);}
+  button.status-pill:active{transform:scale(0.95);}
   .status-pill .status-tooltip{
     position:absolute; top:calc(100% + 8px); left:50%; transform:translateX(-50%) translateY(-4px);
     background:var(--header-bg); color:var(--header-text); padding:8px 12px; border-radius:6px;
@@ -873,7 +876,7 @@
       </div>
     </div>
     <div style="display:flex; align-items:center; gap:18px;">
-      <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#FFFFFF; opacity:0.55; letter-spacing:0.05em; background:rgba(255,255,255,0.08); padding:3px 8px; border-radius:4px;">v024</span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#FFFFFF; opacity:0.55; letter-spacing:0.05em; background:rgba(255,255,255,0.08); padding:3px 8px; border-radius:4px;">v025</span>
       <span class="conn-status" id="conn-status-pill" title="Comprobando sincronización…"><span class="conn-dot" id="conn-dot"></span><span id="conn-text">Comprobando…</span><span class="sync-count" id="sync-count"></span></span>
       <button class="welcome-reopen-btn" id="update-check-btn" onclick="buscarActualizacion()" title="Buscar una versión nueva de la app">
         <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
@@ -1477,7 +1480,7 @@
     <div class="field"><label for="iem-to">Para</label><input type="text" id="iem-to"></div>
     <div class="field"><label for="iem-subject">Asunto</label><input type="text" id="iem-subject"></div>
     <div class="field"><label for="iem-body">Mensaje</label><textarea id="iem-body" rows="9" style="width:100%; font:inherit; padding:10px; border:1.5px solid var(--paper-line); border-radius:8px; background:var(--card); color:var(--ink); resize:vertical;"></textarea></div>
-    <p style="font-size:12.5px; color:var(--ink-soft); margin:4px 0 10px;">El PDF no se puede adjuntar solo: pulsa <b>1. Descargar PDF</b>, luego <b>2. Abrir en Gmail</b> y adjunta el archivo descargado antes de enviar. Después marca la factura como enviada.</p>
+    <p style="font-size:12.5px; color:var(--ink-soft); margin:4px 0 10px;">El PDF no se puede adjuntar solo: pulsa <b>1. Descargar PDF</b>, luego <b>2. Abrir en Gmail</b> y adjunta el archivo descargado antes de enviar. La factura se marcará sola como enviada al abrir el correo.</p>
     <div class="actions-row" style="margin-top:8px; flex-wrap:wrap;">
       <button class="btn btn-gold" onclick="iemDescargarPdf()">1. Descargar PDF</button>
       <button class="btn btn-gold" onclick="iemAbrirGmail()">2. Abrir en Gmail</button>
@@ -1485,7 +1488,7 @@
       <button class="btn btn-ghost" onclick="iemCopiar()">Copiar texto</button>
     </div>
     <div class="actions-row" style="margin-top:10px; flex-wrap:wrap;">
-      <button class="btn btn-ghost" onclick="iemMarcarEnviada()">✓ Marcar como enviada</button>
+      <button class="btn btn-ghost" onclick="iemMarcarEnviada()">✓ Hecho (cerrar)</button>
       <button class="btn btn-ghost" onclick="closeInvEmailModal()">Cerrar</button>
     </div>
   </div>
@@ -2819,6 +2822,52 @@ window.resendInvoiceEmail = function(invoiceId){
   abrirModalEmailFactura(inv, inv.id, false);
 };
 
+// Guarda el estado de envío (enviada / pendiente) y lo refleja al instante en el listado.
+async function guardarEstadoEnvio(invId, estado){
+  const datos = estado === 'enviada'
+    ? { estado, enviadaEn: serverTimestamp() }
+    : { estado, enviadaEn: null };
+  await updateDoc(doc(db, 'facturas', invId), datos);
+  [invoicesCache, allInvoicesCache].forEach(lista => {
+    const f = lista.find(i => i.id === invId);
+    if(f) f.estado = estado;
+  });
+  if(document.getElementById('panel-listado')?.classList.contains('active') || document.getElementById('invoices-container')?.offsetParent){
+    renderInvoices(invoicesCache, { searching: document.getElementById('invoice-search')?.value.trim().length > 0 });
+  }
+}
+
+// Clic en el círculo de estado del listado: alterna enviada <-> pendiente.
+window.toggleInvoiceSent = async function(invId){
+  const inv = invoicesCache.find(i => i.id === invId);
+  if(!inv) return;
+  const nuevo = inv.estado === 'enviada' ? 'pendiente' : 'enviada';
+  try{
+    await guardarEstadoEnvio(invId, nuevo);
+    showToast(nuevo === 'enviada'
+      ? `Factura ${inv.numero} marcada como enviada.`
+      : `Factura ${inv.numero} marcada de nuevo como pendiente de enviar.`);
+  }catch(e){
+    console.error(e);
+    showToast('Error al cambiar el estado de envío: ' + e.message, true);
+  }
+};
+
+// Al abrir el correo (Gmail o programa de correo) la factura se marca sola como enviada.
+async function marcarEnviadaAlAbrirCorreo(){
+  if(!invEmailCtx) return;
+  const { inv, docId } = invEmailCtx;
+  if(inv.estado === 'enviada') return;
+  try{
+    await guardarEstadoEnvio(docId, 'enviada');
+    inv.estado = 'enviada';
+    showToast(`Factura ${inv.numero} marcada como enviada. Si al final no la envías, pulsa su círculo de estado en el listado para revertirlo.`);
+  }catch(e){
+    console.error(e);
+    showToast('No se pudo marcar como enviada: ' + e.message, true);
+  }
+}
+
 window.iemDescargarPdf = function(){
   if(!invEmailCtx) return;
   try{
@@ -2835,11 +2884,13 @@ window.iemAbrirGmail = function(){
   const su = encodeURIComponent(document.getElementById('iem-subject').value);
   const bo = encodeURIComponent(document.getElementById('iem-body').value);
   window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${su}&body=${bo}`, '_blank');
+  marcarEnviadaAlAbrirCorreo();
 };
 window.iemAbrirMailto = function(){
   const to = document.getElementById('iem-to').value.trim();
   const su = encodeURIComponent(document.getElementById('iem-subject').value);
   const bo = encodeURIComponent(document.getElementById('iem-body').value);
+  marcarEnviadaAlAbrirCorreo();
   window.location.href = `mailto:${to}?subject=${su}&body=${bo}`;
 };
 window.iemCopiar = function(){
@@ -3331,10 +3382,10 @@ function renderInvoices(list, { searching = false } = {}){
     const estado = inv.estado || 'pendiente';
     const estadoClass = estado === 'enviada' ? 'status-enviada' : (estado === 'error' ? 'status-error' : 'status-pendiente');
     const estadoExplicacion = {
-      enviada: 'Enviada por email correctamente al patrocinador',
-      error: 'El envío por email falló — puedes reintentarlo con el icono ✉',
-      pendiente: 'Creada pero aún no enviada por email al patrocinador'
-    }[estado] || 'Creada pero aún no enviada por email al patrocinador';
+      enviada: 'Enviada por email al patrocinador. Clic para marcarla como pendiente de enviar.',
+      error: 'El envío por email falló. Clic para marcarla como enviada.',
+      pendiente: 'Aún no enviada por email. Clic para marcarla como enviada.'
+    }[estado] || 'Aún no enviada por email. Clic para marcarla como enviada.';
     const pagada = !!inv.pagada;
     const pagoClass = pagada ? 'pago-cobrada' : 'pago-pendiente';
     const pagoExplicacion = pagada
@@ -3346,7 +3397,7 @@ function renderInvoices(list, { searching = false } = {}){
       <td>${inv.patrocinador?.nombre || '—'}</td>
       <td>${inv.concepto || '—'}</td>
       <td>${formatDate(inv.fecha)}</td>
-      <td style="text-align:center;"><span class="status-pill ${estadoClass}"><span class="status-dot"></span><span class="status-tooltip">${estadoExplicacion}</span></span></td>
+      <td style="text-align:center;"><button class="status-pill ${estadoClass}" onclick="toggleInvoiceSent('${inv.id}')"><span class="status-dot"></span><span class="status-tooltip">${estadoExplicacion}</span></button></td>
       <td style="text-align:center;"><button class="pago-pill ${pagoClass}" onclick="toggleInvoicePaid('${inv.id}', ${!pagada})" title="${pagoExplicacion}">
         <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="10" width="18" height="10" rx="1"/><path d="M5 10V7a7 3 0 0 1 14 0v3"/><line x1="3" y1="6" x2="21" y2="6"/></svg>
         <span class="status-tooltip">${pagoExplicacion}</span>
