@@ -871,7 +871,7 @@
       </div>
     </div>
     <div style="display:flex; align-items:center; gap:18px;">
-      <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#FFFFFF; opacity:0.55; letter-spacing:0.05em; background:rgba(255,255,255,0.08); padding:3px 8px; border-radius:4px;">v019</span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#FFFFFF; opacity:0.55; letter-spacing:0.05em; background:rgba(255,255,255,0.08); padding:3px 8px; border-radius:4px;">v020</span>
       <span class="conn-status" id="conn-status-pill" title="Comprobando sincronización…"><span class="conn-dot" id="conn-dot"></span><span id="conn-text">Comprobando…</span><span class="sync-count" id="sync-count"></span></span>
       <button class="welcome-reopen-btn" onclick="openWelcomeModal()" title="Ir a una sección">
         <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
@@ -3755,7 +3755,10 @@ window.renderSponsorCards = function(){
 
 // ---------------- INFORME PDF DE PATROCINADORES ----------------
 window.generarInformePatrocinadores = function(){
-  const lista = getFilteredSponsors();
+  // Orden del informe: primero por renovación y, dentro de cada estado, por número de patrocinador
+  const ordenRenov = sp => sp.facturable === false ? 3 : ({ confirmado:0, sin_respuesta:1, declinado:2 }[renovacionVigenteDe(sp)] ?? 1);
+  const lista = getFilteredSponsors().sort((a, b) =>
+    ordenRenov(a) - ordenRenov(b) || sponsorsCache.indexOf(a) - sponsorsCache.indexOf(b));
   if(lista.length === 0){ showToast('No hay patrocinadores con esos filtros.', true); return; }
 
   const { jsPDF } = window.jspdf;
@@ -3826,7 +3829,7 @@ window.generarInformePatrocinadores = function(){
 
   // Caja con el texto de la selección
   doc.setFillColor(...FONDO); doc.setDrawColor(...LINEA);
-  doc.roundedRect(M, y, CW, 50, 4, 4, 'FD');
+  doc.roundedRect(M, y, CW, 62, 4, 4, 'FD');
   doc.setFont('helvetica','bold'); doc.setFontSize(8.5); doc.setTextColor(...GRANATE);
   doc.text('SELECCIÓN', M + 12, y + 15);
   doc.setFont('helvetica','normal'); doc.setFontSize(10.5); doc.setTextColor(...TINTA);
@@ -3834,8 +3837,8 @@ window.generarInformePatrocinadores = function(){
   doc.text(selLines.slice(0,1), M + 12, y + 30);
   doc.setFontSize(9); doc.setTextColor(...GRIS);
   const resumen = `${lista.length} de ${sponsorsCache.length} patrocinadores   ·   Renovación: ${cont.confirmado} confirmados, ${cont.sin_respuesta} sin respuesta, ${cont.declinado} declinados   ·   Pago: ${contPago.pagada} pagadas, ${contPago.pendiente} no pagadas, ${contPago.sinfacturar} sin facturar, ${contPago.nofactura} sin factura`;
-  doc.text(doc.splitTextToSize(resumen, CW - 24)[0], M + 12, y + 43);
-  y += 50 + 16;
+  doc.text(doc.splitTextToSize(resumen, CW - 24).slice(0,2), M + 12, y + 43);
+  y += 62 + 16;
 
   y = cabeceraTabla(y);
 
@@ -3863,7 +3866,7 @@ window.generarInformePatrocinadores = function(){
     doc.setTextColor(...TINTA); doc.setFontSize(9.5);
     doc.text(nombreL, cols[1].x + PAD, ty, { lineHeightFactor: 1.15 });
     doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(...GRIS);
-    doc.text(((sp.cif || 'sin CIF') + (sp.nombreComercial && sp.nombre && sp.nombre !== sp.nombreComercial ? ' · ' + sp.nombre : '')).slice(0, 60), cols[1].x + PAD, ty + nombreL.length * LH);
+    doc.text(doc.splitTextToSize((sp.cif || 'sin CIF') + (sp.nombreComercial && sp.nombre && sp.nombre !== sp.nombreComercial ? ' · ' + sp.nombre : ''), cols[1].w - 2*PAD)[0], cols[1].x + PAD, ty + nombreL.length * LH);
 
     doc.setTextColor(...TINTA);
     doc.text(dirL, cols[2].x + PAD, ty);
