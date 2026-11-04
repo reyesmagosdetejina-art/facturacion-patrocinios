@@ -546,7 +546,10 @@
   table.sponsors tbody tr:hover{background:var(--gold-surface);}
   table.sponsors .sp-number{font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:600; color:var(--gold-deep); background:var(--gold-surface); padding:2px 7px; border-radius:10px;}
   table.sponsors .sp-nombre{font-family:'Fraunces',serif; font-weight:600; font-size:14px; line-height:1.3; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;}
-  table.sponsors .sp-sub{font-size:12px; color:var(--ink-soft); margin-top:2px; line-height:1.35; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  table.sponsors .sp-razon{font-size:12px; color:var(--ink-soft); line-height:1.3; margin-top:1px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-style:italic;}
+  .tag-falta{display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; color:#8A4B0B; background:#F6E0C4; padding:2px 7px; border-radius:10px; margin-left:6px; vertical-align:middle;}
+  :root[data-theme="dark"] .tag-falta{background:#4A3418; color:#F0C48A;}
+  table.sponsors .sp-sub{font-size:12px; color:var(--ink-soft); margin-top:2px; line-height:1.35; overflow:hidden; text-overflow:ellipsis; white-space:normal;}
   table.sponsors .sp-mono{font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--gold-deep);}
   table.sponsors .sp-dir{font-size:12px; color:var(--ink-soft); line-height:1.35; margin-top:2px; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;}
   table.sponsors .sp-email{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
@@ -868,7 +871,7 @@
       </div>
     </div>
     <div style="display:flex; align-items:center; gap:18px;">
-      <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#FFFFFF; opacity:0.55; letter-spacing:0.05em; background:rgba(255,255,255,0.08); padding:3px 8px; border-radius:4px;">v017</span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#FFFFFF; opacity:0.55; letter-spacing:0.05em; background:rgba(255,255,255,0.08); padding:3px 8px; border-radius:4px;">v019</span>
       <span class="conn-status" id="conn-status-pill" title="Comprobando sincronización…"><span class="conn-dot" id="conn-dot"></span><span id="conn-text">Comprobando…</span><span class="sync-count" id="sync-count"></span></span>
       <button class="welcome-reopen-btn" onclick="openWelcomeModal()" title="Ir a una sección">
         <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
@@ -906,9 +909,13 @@
         <p class="section-label">Patrocinador</p>
         <div class="grid2">
           <div class="field autocomplete-wrap">
-            <label for="f-nombre">Razón social / Nombre <span class="badge-known" id="badge-known" style="display:none;">Patrocinador conocido</span></label>
-            <input type="text" id="f-nombre" placeholder="Ej. Panadería García S.L." autocomplete="off">
+            <label for="f-comercial">Nombre comercial <span style="color:var(--wine);">*</span> <span class="badge-known" id="badge-known" style="display:none;">Patrocinador conocido</span></label>
+            <input type="text" id="f-comercial" placeholder="Ej. Panadería García" autocomplete="off">
             <div class="autocomplete-list" id="sponsor-autocomplete"></div>
+          </div>
+          <div class="field">
+            <label for="f-nombre">Razón social</label>
+            <input type="text" id="f-nombre" placeholder="Ej. García Hermanos S.L. (si se deja vacío, el nombre comercial)" autocomplete="off">
           </div>
           <div class="field">
             <label for="f-cif">CIF / NIF</label>
@@ -1392,8 +1399,13 @@
   <div class="modal-box">
     <h3 id="sponsor-modal-title">Nuevo patrocinador</h3>
     <div class="field">
-      <label for="sp-nombre">Razón social / Nombre</label>
-      <input type="text" id="sp-nombre">
+      <label for="sp-comercial">Nombre comercial <span style="color:var(--wine);">*</span></label>
+      <input type="text" id="sp-comercial" placeholder="Cómo se le conoce. Ej. Panadería García">
+    </div>
+    <div class="field">
+      <label for="sp-nombre">Razón social</label>
+      <input type="text" id="sp-nombre" placeholder="Nombre fiscal de la factura. Ej. García Hermanos S.L.">
+      <div style="font-size:12px; color:var(--ink-soft); margin-top:4px;">Opcional: si lo dejas vacío se usará el nombre comercial en las facturas.</div>
     </div>
     <div class="field">
       <label for="sp-cif">CIF / NIF</label>
@@ -1449,7 +1461,11 @@
     <h3>Editar factura <span id="inv-modal-numero" class="sp-mono" style="font-size:14px; color:var(--gold-deep);"></span></h3>
     <p class="section-label" style="margin-top:-8px;">Datos del deudor</p>
     <div class="field">
-      <label for="ie-nombre">Razón social / Nombre</label>
+      <label for="ie-comercial">Nombre comercial</label>
+      <input type="text" id="ie-comercial">
+    </div>
+    <div class="field">
+      <label for="ie-nombre">Razón social</label>
       <input type="text" id="ie-nombre">
     </div>
     <div class="grid2">
@@ -1994,7 +2010,7 @@ window.goToSectionFromWelcome = function(sectionName){
   } else {
     // "Todas las secciones": deja la vista tal como esté (por defecto,
     // la pestaña "Nueva factura") y enfoca su primer campo igualmente.
-    document.getElementById('f-nombre').focus();
+    document.getElementById('f-comercial').focus();
   }
 }
 
@@ -2029,7 +2045,7 @@ window.switchTab = function(name){
     renderSponsorCards();
     if(allInvoicesCache.length === 0) loadInvoices().then(() => renderSponsorCards());
   }
-  if(name === 'nueva') document.getElementById('f-nombre').focus();
+  if(name === 'nueva') document.getElementById('f-comercial').focus();
   if(name === 'informes') loadInformes();
 }
 
@@ -2414,7 +2430,7 @@ async function refreshNextNumberPreview(){
 document.getElementById('f-fecha').addEventListener('change', refreshNextNumberPreview);
 
 // Quitar marca de error en cuanto el usuario corrige el campo
-['f-nombre','f-cif','f-direccion','f-email','f-concepto-1','f-fecha','f-importe-1'].forEach(id => {
+['f-comercial','f-nombre','f-cif','f-direccion','f-email','f-concepto-1','f-fecha','f-importe-1'].forEach(id => {
   const el = document.getElementById(id);
   if(!el) return;
   const evento = (el.tagName === 'SELECT') ? 'change' : 'input';
@@ -2434,7 +2450,8 @@ function setStepState(btnId, state){
 
 // ---------------- PASO 1: CREAR EL REGISTRO DE LA FACTURA (sin PDF) ----------------
 window.createInvoiceRecord = async function(){
-  const nombre = document.getElementById('f-nombre').value.trim();
+  const nombreComercial = document.getElementById('f-comercial').value.trim();
+  const nombre = document.getElementById('f-nombre').value.trim() || nombreComercial;   // razón social (nombre fiscal)
   const cif = document.getElementById('f-cif').value.trim();
   const direccion = document.getElementById('f-direccion').value.trim();
   const email = document.getElementById('f-email').value.trim();
@@ -2450,7 +2467,7 @@ window.createInvoiceRecord = async function(){
 
   // Validación: campos obligatorios del patrocinador
   const camposObligatorios = [
-    { id: 'f-nombre', valor: nombre },
+    { id: 'f-comercial', valor: nombreComercial },
     { id: 'f-cif', valor: cif },
     { id: 'f-direccion', valor: direccion },
     { id: 'f-email', valor: email },
@@ -2515,7 +2532,7 @@ window.createInvoiceRecord = async function(){
     const invoiceData = {
       numero: numeroFactura,
       anio: year,
-      patrocinador: { nombre, cif, direccion, email, telefono },
+      patrocinador: { nombre, nombreComercial, cif, direccion, email, telefono },
       concepto, conceptoOtro, importe,
       lineasExtra,
       notas,
@@ -2530,7 +2547,7 @@ window.createInvoiceRecord = async function(){
     await setDoc(newDocRef, invoiceData);
 
     // Guardar/actualizar el patrocinador en la base de datos reutilizable
-    await upsertSponsor({ nombre, cif, direccion, email, telefono });
+    await upsertSponsor({ nombre, nombreComercial, cif, direccion, email, telefono });
 
     facturaGenerada = { docId: newDocRef.id, numero: numeroFactura, invoiceData: { ...invoiceData, fecha }, pdfDoc: null };
 
@@ -2790,18 +2807,24 @@ const SELLO_ASOCIACION_B64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAL0A
     return String(texto).split('\n').flatMap(p => doc.splitTextToSize(p, maxWidth)).length;
   }
   const anchoTextoDeudor = CONTENT_W - 28;
-  const lineasNombre = contarLineas(patrocinador.nombre, anchoTextoDeudor);
+  // Si la factura tiene nombre comercial distinto de la razón social, se muestran los dos campos por separado
+  const mostrarComercial = !!patrocinador.nombreComercial && patrocinador.nombreComercial !== patrocinador.nombre;
+  const textoRazon = mostrarComercial ? `Razón social: ${patrocinador.nombre}` : patrocinador.nombre;
+  const textoComercial = mostrarComercial ? `Nombre comercial: ${patrocinador.nombreComercial}` : '';
+  const lineasNombre = contarLineas(textoRazon, anchoTextoDeudor);
+  const lineasComercial = contarLineas(textoComercial, anchoTextoDeudor);
   const lineasCif = contarLineas(`CIF/NIF: ${patrocinador.cif}`, anchoTextoDeudor);
   const lineasDireccion = contarLineas(patrocinador.direccion, anchoTextoDeudor);
   const lineasEmail = contarLineas(patrocinador.email, anchoTextoDeudor);
-  const alturaContenidoDeudor = lineasNombre * 13 + (lineasCif + lineasDireccion + lineasEmail) * 12;
+  const alturaContenidoDeudor = lineasNombre * 13 + (lineasComercial + lineasCif + lineasDireccion + lineasEmail) * 12;
   const deudorBoxH = Math.max(alturaContenidoDeudor + 26, 70);
 
   campo(MARGIN, y, CONTENT_W, deudorBoxH);
   doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5); doc.setTextColor(...TINTA);
   let deudorY = y + 18;
-  deudorY = writeBlock(patrocinador.nombre, MARGIN + 14, deudorY, { maxWidth: anchoTextoDeudor, lineHeight: 13 });
+  deudorY = writeBlock(textoRazon, MARGIN + 14, deudorY, { maxWidth: anchoTextoDeudor, lineHeight: 13 });
   doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...GRIS_TEXTO);
+  if(textoComercial) deudorY = writeBlock(textoComercial, MARGIN + 14, deudorY, { maxWidth: anchoTextoDeudor, lineHeight: 12 });
   deudorY = writeBlock(`CIF/NIF: ${patrocinador.cif}`, MARGIN + 14, deudorY, { maxWidth: anchoTextoDeudor, lineHeight: 12 });
   deudorY = writeBlock(patrocinador.direccion, MARGIN + 14, deudorY, { maxWidth: anchoTextoDeudor, lineHeight: 12 });
   writeBlock(patrocinador.email, MARGIN + 14, deudorY, { maxWidth: anchoTextoDeudor, lineHeight: 12 });
@@ -2952,7 +2975,7 @@ function generarPdfEnNavegador(data){
 }
 
 window.clearForm = function(){
-  ['f-nombre','f-cif','f-direccion','f-email','f-telefono','f-notas',
+  ['f-comercial','f-nombre','f-cif','f-direccion','f-email','f-telefono','f-notas',
    'f-concepto-1','f-concepto-otro-1','f-importe-1',
    'f-concepto-2','f-concepto-otro-2','f-importe-2',
    'f-concepto-3','f-concepto-otro-3','f-importe-3'
@@ -2964,7 +2987,7 @@ window.clearForm = function(){
   document.getElementById('f-iva').value = '0';
   document.getElementById('f-fecha').valueAsDate = new Date();
   badgeKnown.style.display = 'none';
-  ['f-nombre','f-cif','f-direccion','f-email','f-concepto-1','f-fecha','f-importe-1'].forEach(id => { const el = document.getElementById(id); if(el) el.classList.remove('field-error'); });
+  ['f-comercial','f-nombre','f-cif','f-direccion','f-email','f-concepto-1','f-fecha','f-importe-1'].forEach(id => { const el = document.getElementById(id); if(el) el.classList.remove('field-error'); });
   facturaGenerada = null;
   document.getElementById('build-pdf-btn').disabled = true;
   document.getElementById('download-pdf-btn').disabled = true;
@@ -3396,6 +3419,7 @@ window.openInvoiceEditModal = function(id){
   editingInvoiceId = id;
 
   document.getElementById('inv-modal-numero').textContent = inv.numero;
+  document.getElementById('ie-comercial').value = inv.patrocinador?.nombreComercial || '';
   document.getElementById('ie-nombre').value = inv.patrocinador?.nombre || '';
   document.getElementById('ie-cif').value = inv.patrocinador?.cif || '';
   document.getElementById('ie-email').value = inv.patrocinador?.email || '';
@@ -3416,7 +3440,8 @@ window.closeInvoiceEditModal = function(){
 window.saveInvoiceEdit = async function(){
   if(!editingInvoiceId) return;
 
-  const nombre = document.getElementById('ie-nombre').value.trim();
+  const nombreComercial = document.getElementById('ie-comercial').value.trim();
+  const nombre = document.getElementById('ie-nombre').value.trim() || nombreComercial;
   const cif = document.getElementById('ie-cif').value.trim();
   const email = document.getElementById('ie-email').value.trim();
   const direccion = document.getElementById('ie-direccion').value.trim();
@@ -3439,12 +3464,12 @@ window.saveInvoiceEdit = async function(){
     const invRef = doc(db, 'facturas', editingInvoiceId);
     const inv = invoicesCache.find(i => i.id === editingInvoiceId);
     await updateDoc(invRef, {
-      patrocinador: { ...inv.patrocinador, nombre, cif, email, direccion },
+      patrocinador: { ...inv.patrocinador, nombre, nombreComercial, cif, email, direccion },
       concepto, conceptoOtro, fecha, importe, igic, textoExencion, total, notas
     });
 
     // Mantener también actualizada la ficha del patrocinador
-    await upsertSponsor({ nombre, cif, direccion, email, telefono: inv.patrocinador?.telefono || '' });
+    await upsertSponsor({ nombre, ...(nombreComercial ? { nombreComercial } : {}), cif, direccion, email, telefono: inv.patrocinador?.telefono || '' });
 
     closeInvoiceEditModal();
     showToast('Factura actualizada correctamente.');
@@ -3494,6 +3519,9 @@ function formatCurrency(num){
 let sponsorsCache = [];    // todos los patrocinadores cargados de Firestore
 let editingSponsorId = null;
 
+// Nombre con el que se ve al patrocinador en la app: el comercial y, si falta, la razón social.
+function nombreVisible(s){ return (s && (s.nombreComercial || s.nombre)) || ''; }
+
 function sponsorDocId(nombre){
   // ID determinista a partir del nombre, para evitar duplicados por reintentos.
   return nombre.trim().toLowerCase()
@@ -3506,14 +3534,14 @@ async function loadSponsors(){
     const snap = await getDocs(collection(db,'patrocinadores'));
     sponsorsCache = [];
     snap.forEach(d => sponsorsCache.push({ id:d.id, ...d.data() }));
-    sponsorsCache.sort((a,b) => (a.nombre||'').localeCompare(b.nombre||'', 'es'));
+    sponsorsCache.sort((a,b) => nombreVisible(a).localeCompare(nombreVisible(b), 'es'));
   }catch(e){
     console.error('Error cargando patrocinadores:', e);
   }
 }
 
 // Crea o actualiza un patrocinador cuando se emite una factura a su nombre.
-async function upsertSponsor({ nombre, cif, direccion, email, telefono, facturable }){
+async function upsertSponsor({ nombre, nombreComercial, cif, direccion, email, telefono, facturable, extra }){
   if(!nombre) return;
   try{
     const id = sponsorDocId(nombre);
@@ -3521,7 +3549,9 @@ async function upsertSponsor({ nombre, cif, direccion, email, telefono, facturab
     const existing = sponsorsCache.find(s => s.id === id);
     await setDoc(ref, {
       nombre, cif, direccion, email, telefono: telefono || '',
+      ...(nombreComercial === undefined ? {} : { nombreComercial }),
       ...(facturable === undefined ? {} : { facturable }),
+      ...(extra || {}),
       actualizadoEn: serverTimestamp(),
       ...(existing ? {} : { creadoEn: serverTimestamp() })
     }, { merge: true });
@@ -3566,7 +3596,7 @@ window.cycleRenovacion = async function(sponsorId){
 }
 
 // ---------------- AUTOCOMPLETADO EN EL FORMULARIO DE FACTURA ----------------
-const nombreInput = document.getElementById('f-nombre');
+const nombreInput = document.getElementById('f-comercial');
 const acList = document.getElementById('sponsor-autocomplete');
 const badgeKnown = document.getElementById('badge-known');
 let acHighlighted = -1;
@@ -3575,7 +3605,7 @@ nombreInput.addEventListener('input', () => {
   const val = nombreInput.value.trim().toLowerCase();
   badgeKnown.style.display = 'none';
   if(val.length < 2){ acList.classList.remove('show'); return; }
-  const matches = sponsorsCache.filter(s => (s.nombre||'').toLowerCase().includes(val)).slice(0,8);
+  const matches = sponsorsCache.filter(s => (s.nombre||'').toLowerCase().includes(val) || (s.nombreComercial||'').toLowerCase().includes(val)).slice(0,8);
   renderAcList(matches);
 });
 nombreInput.addEventListener('blur', () => setTimeout(() => acList.classList.remove('show'), 150));
@@ -3598,15 +3628,17 @@ function renderAcList(matches){
   }
   acList.innerHTML = matches.map((s,i) => `
     <div class="autocomplete-item" data-idx="${i}" onclick="fillFromSponsor('${s.id}')">
-      <div class="ac-name">${s.nombre}</div>
-      <div class="ac-meta">${s.cif || 'sin CIF'} · ${s.email || 'sin email'}</div>
+      <div class="ac-name">${nombreVisible(s)}</div>
+      <div class="ac-meta">${s.nombreComercial && s.nombre !== s.nombreComercial ? s.nombre + ' · ' : ''}${s.cif || 'sin CIF'} · ${s.email || 'sin email'}</div>
     </div>`).join('');
   acList.classList.add('show');
 }
 window.fillFromSponsor = function(id){
   const s = sponsorsCache.find(sp => sp.id === id);
   if(!s) return;
+  document.getElementById('f-comercial').value = s.nombreComercial || '';
   document.getElementById('f-nombre').value = s.nombre || '';
+  ['f-comercial','f-nombre'].forEach(i => document.getElementById(i).classList.remove('field-error'));
   document.getElementById('f-cif').value = s.cif || '';
   document.getElementById('f-direccion').value = s.direccion || '';
   document.getElementById('f-email').value = s.email || '';
@@ -3646,6 +3678,7 @@ function getFilteredSponsors(){
   return sponsorsCache.filter(s =>
     (!term ||
       (s.nombre||'').toLowerCase().includes(term) ||
+      (s.nombreComercial||'').toLowerCase().includes(term) ||
       (s.cif||'').toLowerCase().includes(term) ||
       (s.email||'').toLowerCase().includes(term)) &&
     (fRenov === 'todos' || (s.facturable !== false && renovacionVigenteDe(s) === fRenov)) &&
@@ -3704,7 +3737,7 @@ window.renderSponsorCards = function(){
     return `<tr>
       <td><input type="checkbox" ${s.facturable === false ? 'disabled title="No lleva factura"' : checked} onchange="toggleSponsorSelection('${s.id}', this.checked)"></td>
       <td><span class="sp-number">${String(posicion).padStart(3,'0')}</span></td>
-      <td><div class="sp-nombre" title="${s.nombre}">${s.nombre}</div><div class="sp-sub"><span class="sp-mono">${s.cif || 'sin CIF'}</span>${s.facturable === false ? '<span class="tag-sinfactura">Sin factura</span>' : ''}</div>${s.direccion ? `<div class="sp-dir" title="${s.direccion}">${s.direccion}</div>` : ''}</td>
+      <td><div class="sp-nombre" title="${nombreVisible(s)}">${nombreVisible(s)}</div>${s.nombreComercial && s.nombre && s.nombre !== s.nombreComercial ? `<div class="sp-razon" title="Razón social: ${s.nombre}">${s.nombre}</div>` : ''}<div class="sp-sub"><span class="sp-mono">${s.cif || 'sin CIF'}</span>${s.nombreComercial ? '' : '<span class="tag-falta" title="Edita el patrocinador para añadir su nombre comercial">Falta nombre comercial</span>'}${s.facturable === false ? '<span class="tag-sinfactura">Sin factura</span>' : ''}</div>${s.direccion ? `<div class="sp-dir" title="${s.direccion}">${s.direccion}</div>` : ''}</td>
       <td><div class="sp-email" title="${s.email || ''}">${s.email || '—'}</div><div class="sp-sub">${s.telefono || ''}</div></td>
       <td>${s.facturable === false ? '<span class="pg-pill pg-nofactura" title="Colabora sin factura: no aplica la renovación">Sin factura</span>' : `<button class="renov-pill ${renovacionInfo.clase}" onclick="cycleRenovacion('${s.id}')" title="${renovacionInfo.tooltip}"><span class="renov-dot"></span>${renovacionInfo.texto} ${anioActual}</button>`}</td>
       <td>${pagoPill}</td>
@@ -3809,7 +3842,7 @@ window.generarInformePatrocinadores = function(){
   lista.forEach(sp => {
     const posicion = sponsorsCache.indexOf(sp) + 1;
     doc.setFont('helvetica','bold'); doc.setFontSize(9.5);
-    const nombreL = doc.splitTextToSize(sp.nombre || '', cols[1].w - 2*PAD);
+    const nombreL = doc.splitTextToSize(nombreVisible(sp), cols[1].w - 2*PAD);
     doc.setFont('helvetica','normal'); doc.setFontSize(8.5);
     const dirL = doc.splitTextToSize(sp.direccion || '—', cols[2].w - 2*PAD);
     const emailL = doc.splitTextToSize(sp.email || '—', cols[3].w - 2*PAD);
@@ -3830,7 +3863,7 @@ window.generarInformePatrocinadores = function(){
     doc.setTextColor(...TINTA); doc.setFontSize(9.5);
     doc.text(nombreL, cols[1].x + PAD, ty, { lineHeightFactor: 1.15 });
     doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(...GRIS);
-    doc.text(sp.cif || 'sin CIF', cols[1].x + PAD, ty + nombreL.length * LH);
+    doc.text(((sp.cif || 'sin CIF') + (sp.nombreComercial && sp.nombre && sp.nombre !== sp.nombreComercial ? ' · ' + sp.nombre : '')).slice(0, 60), cols[1].x + PAD, ty + nombreL.length * LH);
 
     doc.setTextColor(...TINTA);
     doc.text(dirL, cols[2].x + PAD, ty);
@@ -3930,7 +3963,7 @@ window.openBulkInvoiceModal = function(){
     <div class="bulk-row" data-sponsor-id="${s.id}">
       <label class="bulk-confirm-label">
         <input type="checkbox" class="bulk-confirm" checked>
-        <span class="bulk-name">${s.nombre}</span>
+        <span class="bulk-name">${nombreVisible(s)}</span>
       </label>
       <select class="bulk-concepto">
         <option value="Patrocinio San Silvestre" selected>Patrocinio San Silvestre</option>
@@ -4003,7 +4036,7 @@ window.generateBulkInvoices = async function(){
     const igic = parseFloat(row.querySelector('.bulk-igic').value);
 
     if(!sponsor || isNaN(importe) || importe <= 0){
-      errores.push(sponsor?.nombre || sponsorId);
+      errores.push(nombreVisible(sponsor) || sponsorId);
       continue;
     }
 
@@ -4028,7 +4061,7 @@ window.generateBulkInvoices = async function(){
       const invoiceData = {
         numero: numeroFactura,
         anio: year,
-        patrocinador: { nombre: sponsor.nombre, cif: sponsor.cif, direccion: sponsor.direccion, email: sponsor.email, telefono: sponsor.telefono || '' },
+        patrocinador: { nombre: sponsor.nombre, nombreComercial: sponsor.nombreComercial || '', cif: sponsor.cif, direccion: sponsor.direccion, email: sponsor.email, telefono: sponsor.telefono || '' },
         concepto, conceptoOtro: '',
         fecha,
         importe, igic, textoExencion, total,
@@ -4047,7 +4080,7 @@ window.generateBulkInvoices = async function(){
       generadas++;
     }catch(e){
       console.error(e);
-      errores.push(sponsor?.nombre || sponsorId);
+      errores.push(nombreVisible(sponsor) || sponsorId);
     }
   }
 
@@ -4084,7 +4117,9 @@ window.openSponsorModal = function(id){
   editingSponsorId = id || null;
   const s = id ? sponsorsCache.find(sp => sp.id === id) : null;
   document.getElementById('sponsor-modal-title').textContent = s ? 'Editar patrocinador' : 'Nuevo patrocinador';
+  document.getElementById('sp-comercial').value = s?.nombreComercial || '';
   document.getElementById('sp-nombre').value = s?.nombre || '';
+  document.getElementById('sp-comercial').classList.remove('field-error');
   document.getElementById('sp-cif').value = s?.cif || '';
   document.getElementById('sp-direccion').value = s?.direccion || '';
   document.getElementById('sp-email').value = s?.email || '';
@@ -4097,32 +4132,40 @@ window.closeSponsorModal = function(){
   editingSponsorId = null;
 }
 window.saveSponsorFromModal = async function(){
-  const nombre = document.getElementById('sp-nombre').value.trim();
+  const nombreComercial = document.getElementById('sp-comercial').value.trim();
+  const razonSocial = document.getElementById('sp-nombre').value.trim();
+  const nombre = razonSocial || nombreComercial;   // nombre fiscal: lo que se factura
   const cif = document.getElementById('sp-cif').value.trim();
   const direccion = document.getElementById('sp-direccion').value.trim();
   const email = document.getElementById('sp-email').value.trim();
   const telefono = document.getElementById('sp-telefono').value.trim();
   const facturable = document.getElementById('sp-facturable').checked;
 
-  const spNombreEl = document.getElementById('sp-nombre');
-  if(!nombre){
-    spNombreEl.classList.add('field-error');
-    showToast('El nombre es obligatorio.', true);
-    spNombreEl.focus();
+  const spComercialEl = document.getElementById('sp-comercial');
+  if(!nombreComercial){
+    spComercialEl.classList.add('field-error');
+    showToast('El nombre comercial es obligatorio.', true);
+    spComercialEl.focus();
     return;
   }
-  spNombreEl.classList.remove('field-error');
+  spComercialEl.classList.remove('field-error');
 
   try{
     // Si se editó el nombre de un patrocinador existente, el ID determinista cambiaría;
     // en ese caso, borramos el doc antiguo y creamos uno nuevo con el nombre actualizado.
+    let extra;
     if(editingSponsorId){
       const newId = sponsorDocId(nombre);
       if(newId !== editingSponsorId){
+        // Al cambiar de ID se conserva la renovación ya registrada
+        const previo = sponsorsCache.find(sp => sp.id === editingSponsorId);
+        if(previo && previo.renovacionAnio){
+          extra = { renovacionAnio: previo.renovacionAnio, renovacionEstado: previo.renovacionEstado || 'sin_respuesta' };
+        }
         await deleteDoc(doc(db, 'patrocinadores', editingSponsorId));
       }
     }
-    await upsertSponsor({ nombre, cif, direccion, email, telefono, facturable });
+    await upsertSponsor({ nombre, nombreComercial, cif, direccion, email, telefono, facturable, extra });
     renderSponsorCards();
     closeSponsorModal();
     showToast('Patrocinador guardado correctamente.');
@@ -4133,7 +4176,7 @@ window.saveSponsorFromModal = async function(){
 }
 window.deleteSponsor = async function(id){
   const s = sponsorsCache.find(sp => sp.id === id);
-  if(!confirm(`¿Eliminar a "${s?.nombre}" de la base de datos de patrocinadores?\n\n(Las facturas ya emitidas no se ven afectadas.)`)) return;
+  if(!confirm(`¿Eliminar a "${nombreVisible(s)}" de la base de datos de patrocinadores?\n\n(Las facturas ya emitidas no se ven afectadas.)`)) return;
   try{
     await deleteDoc(doc(db, 'patrocinadores', id));
     await loadSponsors();
@@ -4178,13 +4221,15 @@ window.handleImportFile = async function(event){
     const colMap = {};
     Object.keys(rows[0]).forEach(col => {
       const n = norm(col);
-      if(n.includes('nombre') || n.includes('razon') || n.includes('organizacion')) colMap.nombre = col;
+      if(n.includes('comercial')) colMap.comercial = col;
+      else if(n.includes('nombre') || n.includes('razon') || n.includes('organizacion')) colMap.nombre = col;
       else if(n.includes('cif') || n.includes('nif') || (n.includes('identificacion') && n.includes('impuesto'))) colMap.cif = col;
       else if(n.includes('direcc')) colMap.direccion = col;
       else if(n.includes('mail') || n.includes('correo')) colMap.email = col;
       else if(n.includes('telef') || n.includes('movil') || n.includes('tfno') || (n.includes('contacto') && n.includes('numero'))) colMap.telefono = col;
     });
 
+    if(!colMap.nombre && colMap.comercial){ colMap.nombre = colMap.comercial; }
     if(!colMap.nombre){
       showToast('No se encontró una columna de nombre en el archivo. Revisa las cabeceras.', true);
       return;
@@ -4192,10 +4237,12 @@ window.handleImportFile = async function(event){
 
     let imported = 0;
     for(const row of rows){
-      const nombre = String(row[colMap.nombre] || '').trim();
+      const nombreComercialImp = colMap.comercial ? String(row[colMap.comercial] || '').trim() : '';
+      const nombre = String(row[colMap.nombre] || '').trim() || nombreComercialImp;
       if(!nombre) continue;
       await upsertSponsor({
         nombre,
+        ...(nombreComercialImp ? { nombreComercial: nombreComercialImp } : {}),
         cif: colMap.cif ? String(row[colMap.cif]||'').trim() : '',
         direccion: colMap.direccion ? String(row[colMap.direccion]||'').trim() : '',
         email: colMap.email ? String(row[colMap.email]||'').trim() : '',
