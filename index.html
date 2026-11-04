@@ -871,7 +871,7 @@
       </div>
     </div>
     <div style="display:flex; align-items:center; gap:18px;">
-      <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#FFFFFF; opacity:0.55; letter-spacing:0.05em; background:rgba(255,255,255,0.08); padding:3px 8px; border-radius:4px;">v021</span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#FFFFFF; opacity:0.55; letter-spacing:0.05em; background:rgba(255,255,255,0.08); padding:3px 8px; border-radius:4px;">v022</span>
       <span class="conn-status" id="conn-status-pill" title="Comprobando sincronización…"><span class="conn-dot" id="conn-dot"></span><span id="conn-text">Comprobando…</span><span class="sync-count" id="sync-count"></span></span>
       <button class="welcome-reopen-btn" onclick="openWelcomeModal()" title="Ir a una sección">
         <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
@@ -1368,6 +1368,32 @@
           </div>
         </div>
 
+        <!-- Sección 3: Textos por defecto de correos y WhatsApp -->
+        <div class="herramienta" id="herr-plantillas">
+          <div class="herramienta-header" onclick="toggleHerramienta('herr-plantillas')">
+            <span class="herramienta-title">✉ Textos por defecto de correos y WhatsApp</span>
+            <svg class="herramienta-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="herramienta-body">
+            <p class="card-hint" style="margin-top:16px;">Estos textos aparecen ya redactados al enviar un correo o un WhatsApp, y se pueden retocar en cada envío. Aquí cambias los de por defecto para todos los envíos futuros.</p>
+
+            <p class="section-label" style="margin-top:18px;">Correo de la factura</p>
+            <div class="field"><label for="pl-factura-asunto">Asunto</label><input type="text" id="pl-factura-asunto"></div>
+            <div class="field"><label for="pl-factura-cuerpo">Mensaje</label><textarea id="pl-factura-cuerpo" rows="12" style="width:100%; font:inherit; padding:10px; border:1.5px solid var(--paper-line); border-radius:8px; background:var(--card); color:var(--ink); resize:vertical;"></textarea></div>
+            <p class="card-hint">Se rellenan solos: <code>{{nombre}}</code> (nombre comercial), <code>{{numero}}</code> (Nº de factura), <code>{{concepto}}</code>, <code>{{importe}}</code> (total con €), <code>{{exencion}}</code> (texto de exención, si lo hay) y <code>{{iban}}</code>.</p>
+
+            <p class="section-label" style="margin-top:22px;">Patrocinio (correo y WhatsApp)</p>
+            <div class="field"><label for="pl-patrocinio-asunto">Asunto del correo</label><input type="text" id="pl-patrocinio-asunto"></div>
+            <div class="field"><label for="pl-patrocinio-cuerpo">Mensaje (el mismo para correo y WhatsApp)</label><textarea id="pl-patrocinio-cuerpo" rows="14" style="width:100%; font:inherit; padding:10px; border:1.5px solid var(--paper-line); border-radius:8px; background:var(--card); color:var(--ink); resize:vertical;"></textarea></div>
+            <p class="card-hint">Opcional: <code>{{nombre}}</code> se sustituye por el nombre comercial del patrocinador.</p>
+
+            <div class="actions-row" style="margin-top:14px; flex-wrap:wrap;">
+              <button class="btn btn-gold" onclick="guardarPlantillas()">Guardar textos</button>
+              <button class="btn btn-ghost" onclick="restaurarPlantillas()">Restaurar los originales</button>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -1438,6 +1464,27 @@
 </div>
 
 <div id="update-banner"><span id="update-banner-text">Hay una versión nueva disponible.</span><button onclick="recargarNuevaVersion()">Actualizar</button><button class="ub-x" onclick="document.getElementById('update-banner').classList.remove('show')" title="Cerrar">✕</button></div>
+
+<!-- Modal envío de factura por email (manual) -->
+<div class="modal-overlay" id="inv-email-modal">
+  <div class="modal-box" style="max-width:640px;">
+    <h3>Enviar factura por email <span id="iem-numero" class="sp-mono" style="font-size:14px; color:var(--gold-deep);"></span></h3>
+    <div class="field"><label for="iem-to">Para</label><input type="text" id="iem-to"></div>
+    <div class="field"><label for="iem-subject">Asunto</label><input type="text" id="iem-subject"></div>
+    <div class="field"><label for="iem-body">Mensaje</label><textarea id="iem-body" rows="9" style="width:100%; font:inherit; padding:10px; border:1.5px solid var(--paper-line); border-radius:8px; background:var(--card); color:var(--ink); resize:vertical;"></textarea></div>
+    <p style="font-size:12.5px; color:var(--ink-soft); margin:4px 0 10px;">El PDF no se puede adjuntar solo: pulsa <b>1. Descargar PDF</b>, luego <b>2. Abrir en Gmail</b> y adjunta el archivo descargado antes de enviar. Después marca la factura como enviada.</p>
+    <div class="actions-row" style="margin-top:8px; flex-wrap:wrap;">
+      <button class="btn btn-gold" onclick="iemDescargarPdf()">1. Descargar PDF</button>
+      <button class="btn btn-gold" onclick="iemAbrirGmail()">2. Abrir en Gmail</button>
+      <button class="btn btn-ghost" onclick="iemAbrirMailto()">Programa de correo</button>
+      <button class="btn btn-ghost" onclick="iemCopiar()">Copiar texto</button>
+    </div>
+    <div class="actions-row" style="margin-top:10px; flex-wrap:wrap;">
+      <button class="btn btn-ghost" onclick="iemMarcarEnviada()">✓ Marcar como enviada</button>
+      <button class="btn btn-ghost" onclick="closeInvEmailModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
 
 <!-- Modal email patrocinio -->
 <div class="modal-overlay" id="email-modal">
@@ -1663,7 +1710,7 @@ const firebaseConfig = {
 
 // URL de la Cloud Function que genera el PDF y envía el email.
 // Se rellena tras desplegar functions/ (ver INSTRUCCIONES.md)
-const CLOUD_FUNCTION_URL = "https://europe-west1-san-silvestre-tejina.cloudfunctions.net/crearFacturaYEnviar";
+// (El envío automático por Cloud Function no está desplegado: el email se prepara a mano.)
 
 // NOTA DE SEGURIDAD: esta contraseña está temporalmente de vuelta en el
 // código (visible para cualquiera con "Ver código fuente") porque el
@@ -1774,8 +1821,31 @@ window.logout = function(){
 }
 
 // ---------------- HERRAMIENTAS: CAMBIO DE CONTRASEÑA ----------------
-// ---------------- MENSAJE PATROCINIO (compartido WhatsApp / email) ----------------
-const MENSAJE_PATROCINIO = `¡Hola a todos nuestros colaboradores y patrocinadores!
+// ---------------- TEXTOS POR DEFECTO (correos y WhatsApp), editables en Herramientas ----------------
+const PLANTILLAS_ORIGINALES = {
+  factura: {
+    asunto: 'Factura {{numero}} — Asociación Cultural Reyes Magos de Tejina',
+    cuerpo:
+`Hola, {{nombre}}:
+
+Adjuntamos la factura {{numero}} correspondiente a su patrocinio.
+
+Concepto: {{concepto}}
+Importe total: {{importe}}
+{{exencion}}
+
+Puede realizar el ingreso mediante transferencia bancaria a la siguiente cuenta:
+{{iban}}
+(Beneficiaria: Asociación Cultural Reyes Magos de Tejina)
+
+Muchas gracias por su colaboración con nuestra asociación.
+
+Un saludo,
+Asociación Cultural Reyes Magos de Tejina`
+  },
+  patrocinio: {
+    asunto: 'San Silvestre 2026 – Asociación Cultural Reyes Magos de Tejina',
+    cuerpo: `¡Hola a todos nuestros colaboradores y patrocinadores!
 
 Con gran entusiasmo, nos dirigimos a ustedes, nuestros patrocinadores y colaboradores, para anunciar una nueva edición de la San Silvestre 2026. Como en años anteriores, la carrera se llevará a cabo el próximo sábado, 26 de diciembre, en la emblemática plaza de Tejina. Por tal motivo, necesitamos nos diga si está conforme en participar en la ayuda social y la defensa de nuestras tradiciones populares.
 
@@ -1795,7 +1865,68 @@ Esperamos vuestras respuestas y conformidad de participar en nuestro correo adju
 Un cordial saludo,
 
 La Presidenta
-Juana Ibys Hernández Gómez`;
+Juana Ibys Hernández Gómez`
+  }
+};
+let plantillas = JSON.parse(JSON.stringify(PLANTILLAS_ORIGINALES));
+const IBAN_ASOCIACION = 'ES67 0182 3286 7702 0156 8788';
+
+function rellenarPlantilla(texto, valores){
+  return String(texto || '')
+    .replace(/\{\{\s*(\w+)\s*\}\}/g, (m, k) => (k in valores ? valores[k] : m))
+    .replace(/\n{3,}/g, '\n\n');
+}
+
+async function cargarPlantillas(){
+  try{
+    const snap = await getDoc(doc(db, 'contadores', 'plantillas_correo'));
+    if(snap.exists()){
+      const d = snap.data();
+      ['factura','patrocinio'].forEach(k => {
+        if(d[k]?.asunto) plantillas[k].asunto = d[k].asunto;
+        if(d[k]?.cuerpo) plantillas[k].cuerpo = d[k].cuerpo;
+      });
+    }
+  }catch(e){ console.error('No se pudieron cargar los textos por defecto:', e); }
+  pintarPlantillas();
+}
+function pintarPlantillas(){
+  const set = (id, v) => { const el = document.getElementById(id); if(el) el.value = v; };
+  set('pl-factura-asunto', plantillas.factura.asunto);
+  set('pl-factura-cuerpo', plantillas.factura.cuerpo);
+  set('pl-patrocinio-asunto', plantillas.patrocinio.asunto);
+  set('pl-patrocinio-cuerpo', plantillas.patrocinio.cuerpo);
+}
+window.guardarPlantillas = async function(){
+  const nuevas = {
+    factura:    { asunto: document.getElementById('pl-factura-asunto').value.trim(),    cuerpo: document.getElementById('pl-factura-cuerpo').value.trim() },
+    patrocinio: { asunto: document.getElementById('pl-patrocinio-asunto').value.trim(), cuerpo: document.getElementById('pl-patrocinio-cuerpo').value.trim() }
+  };
+  if(!nuevas.factura.asunto || !nuevas.factura.cuerpo || !nuevas.patrocinio.asunto || !nuevas.patrocinio.cuerpo){
+    showToast('Ningún asunto ni mensaje puede quedar vacío.', true);
+    return;
+  }
+  try{
+    await setDoc(doc(db, 'contadores', 'plantillas_correo'), nuevas);
+    plantillas = nuevas;
+    showToast('Textos guardados.');
+  }catch(e){
+    console.error(e);
+    showToast('Error al guardar los textos: ' + e.message, true);
+  }
+};
+window.restaurarPlantillas = async function(){
+  if(!confirm('¿Restaurar los textos originales? Se perderán los cambios guardados.')) return;
+  try{
+    await deleteDoc(doc(db, 'contadores', 'plantillas_correo'));
+    plantillas = JSON.parse(JSON.stringify(PLANTILLAS_ORIGINALES));
+    pintarPlantillas();
+    showToast('Textos originales restaurados.');
+  }catch(e){
+    console.error(e);
+    showToast('Error al restaurar: ' + e.message, true);
+  }
+};
 
 window.esMovil = function(tel){
   if(!tel) return false;
@@ -1812,8 +1943,9 @@ window.abrirEmailPatrocinio = function(id){
   if(!sp || !sp.email) return;
   emailSponsorId = id;
   document.getElementById('em-to').value = sp.email;
-  document.getElementById('em-subject').value = 'San Silvestre 2026 – Asociación Cultural Reyes Magos de Tejina';
-  document.getElementById('em-body').value = MENSAJE_PATROCINIO;
+  const valoresSp = { nombre: nombreVisible(sp) };
+  document.getElementById('em-subject').value = rellenarPlantilla(plantillas.patrocinio.asunto, valoresSp);
+  document.getElementById('em-body').value = rellenarPlantilla(plantillas.patrocinio.cuerpo, valoresSp);
   document.getElementById('email-modal').classList.add('show');
 };
 window.closeEmailModal = function(){ document.getElementById('email-modal').classList.remove('show'); };
@@ -1841,7 +1973,8 @@ window.abrirWhatsappPatrocinio = function(telefono){
   // Añadir prefijo internacional si empieza por 6 o 7 (España)
   const telInt = tel.startsWith('+') ? tel : (tel.startsWith('00') ? '+' + tel.slice(2) : '+34' + tel);
 
-  const mensaje = MENSAJE_PATROCINIO;
+  const spWa = sponsorsCache.find(x => (x.telefono || '').replace(/\s+/g,'') === telefono);
+  const mensaje = rellenarPlantilla(plantillas.patrocinio.cuerpo, { nombre: spWa ? nombreVisible(spWa) : '' });
 
   const url = `https://wa.me/${telInt}?text=${encodeURIComponent(mensaje)}`;
   window.open(url, '_blank');
@@ -1883,11 +2016,12 @@ window.ejecutarResetContadores = async function(btn){
     // Borrar todos los documentos de la colección "contadores"
     const contadoresSnap = await getDocs(collection(db, 'contadores'));
     const batch = writeBatch(db);
-    contadoresSnap.forEach(d => batch.delete(d.ref));
+    let nBorrados = 0;
+    contadoresSnap.forEach(d => { if(d.id === 'plantillas_correo') return; batch.delete(d.ref); nBorrados++; });
     await batch.commit();
 
     cerrarResetContadoresModal();
-    showToast(`Contadores reseteados — ${contadoresSnap.size} contador${contadoresSnap.size !== 1 ? 'es' : ''} eliminado${contadoresSnap.size !== 1 ? 's' : ''}. La próxima factura empezará desde 001.`);
+    showToast(`Contadores reseteados — ${nBorrados} contador${nBorrados !== 1 ? 'es' : ''} eliminado${nBorrados !== 1 ? 's' : ''}. La próxima factura empezará desde 001.`);
   } catch(e){
     console.error('Error reseteando contadores:', e);
     errorEl.textContent = 'Error al resetear: ' + e.message;
@@ -2608,73 +2742,95 @@ window.downloadInvoicePdf = function(){
   showToast(`Factura ${facturaGenerada.numero} descargada.`);
 }
 
-// ---------------- ENVIAR POR EMAIL (llama a la Cloud Function) ----------------
-window.sendInvoiceEmail = async function(){
-  if(!facturaGenerada){
-    showToast('Genera primero la factura.', true);
-    return;
-  }
+// ---------------- ENVIAR POR EMAIL (manual: Gmail / programa de correo) ----------------
+// La Cloud Function de envío automático no está desplegada, así que el envío es
+// manual: se prepara el mensaje, se descarga el PDF y se abre el correo ya redactado.
+let invEmailCtx = null;
 
-  const sendBtn = document.getElementById('send-btn');
-  const sendLabel = document.getElementById('send-btn-label');
-  sendBtn.disabled = true;
-  sendLabel.innerHTML = '<span class="spinner"></span> Enviando…';
-
-  try {
-    const resp = await fetch(CLOUD_FUNCTION_URL, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ docId: facturaGenerada.docId, ...facturaGenerada.invoiceData })
-    });
-
-    if(!resp.ok) throw new Error('La función de envío devolvió un error');
-
-    showToast(`Factura ${facturaGenerada.numero} enviada a ${facturaGenerada.invoiceData.patrocinador.email}`);
-    clearForm();
-
-  } catch(e){
-    console.error(e);
-    showToast('Error al enviar el email: ' + e.message, true);
-    sendBtn.disabled = false; // permite reintentar el envío
-  } finally {
-    sendLabel.textContent = 'Enviar por email';
-  }
+function valoresFactura(inv){
+  const p = inv.patrocinador || {};
+  return {
+    nombre: p.nombreComercial || p.nombre || '',
+    numero: inv.numero || '',
+    concepto: [inv.concepto, inv.conceptoOtro].filter(Boolean).join(' — '),
+    importe: `${formatCurrency(inv.total)} €`,
+    exencion: inv.textoExencion || '',
+    iban: IBAN_ASOCIACION
+  };
 }
+function textoCorreoFactura(inv){ return rellenarPlantilla(plantillas.factura.cuerpo, valoresFactura(inv)); }
 
-// ---------------- REENVÍO DE EMAIL DESDE EL LISTADO ----------------
-window.resendInvoiceEmail = async function(invoiceId, btn){
-  const inv = invoicesCache.find(i => i.id === invoiceId);
-  if(!inv){
-    showToast('No se encontró la factura.', true);
-    return;
-  }
+function abrirModalEmailFactura(inv, docId, desdeFormulario){
   if(!inv.patrocinador?.email){
     showToast('Esta factura no tiene email de patrocinador guardado.', true);
     return;
   }
-
-  const originalHTML = btn?.innerHTML;
-  if(btn){ btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>'; }
-
-  try {
-    const resp = await fetch(CLOUD_FUNCTION_URL, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ docId: inv.id, ...inv })
-    });
-
-    if(!resp.ok) throw new Error('La función de envío devolvió un error');
-
-    showToast(`Factura ${inv.numero} reenviada a ${inv.patrocinador.email}`);
-    loadInvoices(currentYearFilter); // refresca el estado (pendiente/enviada) en la tabla
-
-  } catch(e){
-    console.error(e);
-    showToast('Error al reenviar el email: ' + e.message, true);
-  } finally {
-    if(btn){ btn.disabled = false; btn.innerHTML = originalHTML; }
-  }
+  invEmailCtx = { inv, docId, desdeFormulario };
+  document.getElementById('iem-numero').textContent = inv.numero || '';
+  document.getElementById('iem-to').value = inv.patrocinador.email;
+  document.getElementById('iem-subject').value = rellenarPlantilla(plantillas.factura.asunto, valoresFactura(inv));
+  document.getElementById('iem-body').value = textoCorreoFactura(inv);
+  document.getElementById('inv-email-modal').classList.add('show');
 }
+window.closeInvEmailModal = function(){ document.getElementById('inv-email-modal').classList.remove('show'); };
+
+window.sendInvoiceEmail = function(){
+  if(!facturaGenerada){
+    showToast('Genera primero la factura.', true);
+    return;
+  }
+  abrirModalEmailFactura(facturaGenerada.invoiceData, facturaGenerada.docId, true);
+};
+
+window.resendInvoiceEmail = function(invoiceId){
+  const inv = invoicesCache.find(i => i.id === invoiceId);
+  if(!inv){ showToast('No se encontró la factura.', true); return; }
+  abrirModalEmailFactura(inv, inv.id, false);
+};
+
+window.iemDescargarPdf = function(){
+  if(!invEmailCtx) return;
+  try{
+    const pdf = construirPdfFactura(invEmailCtx.inv);
+    pdf.save(nombreArchivoFactura(invEmailCtx.inv));
+    showToast('PDF descargado. Adjúntalo al correo.');
+  }catch(e){
+    console.error(e);
+    showToast('No se pudo generar el PDF: ' + e.message, true);
+  }
+};
+window.iemAbrirGmail = function(){
+  const to = encodeURIComponent(document.getElementById('iem-to').value.trim());
+  const su = encodeURIComponent(document.getElementById('iem-subject').value);
+  const bo = encodeURIComponent(document.getElementById('iem-body').value);
+  window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${to}&su=${su}&body=${bo}`, '_blank');
+};
+window.iemAbrirMailto = function(){
+  const to = document.getElementById('iem-to').value.trim();
+  const su = encodeURIComponent(document.getElementById('iem-subject').value);
+  const bo = encodeURIComponent(document.getElementById('iem-body').value);
+  window.location.href = `mailto:${to}?subject=${su}&body=${bo}`;
+};
+window.iemCopiar = function(){
+  const t = document.getElementById('iem-body').value;
+  (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(
+    () => showToast('Texto copiado'),
+    () => { const a = document.getElementById('iem-body'); a.select(); document.execCommand('copy'); showToast('Texto copiado'); });
+};
+window.iemMarcarEnviada = async function(){
+  if(!invEmailCtx) return;
+  const { inv, docId, desdeFormulario } = invEmailCtx;
+  try{
+    await updateDoc(doc(db, 'facturas', docId), { estado: 'enviada', enviadaEn: serverTimestamp() });
+    showToast(`Factura ${inv.numero} marcada como enviada.`);
+    closeInvEmailModal();
+    if(desdeFormulario){ clearForm(); }
+    loadInvoices(currentYearFilter);
+  }catch(e){
+    console.error(e);
+    showToast('Error al marcar la factura como enviada: ' + e.message, true);
+  }
+};
 
 // Marca o desmarca una factura como cobrada (ingreso confirmado en el
 // banco). Es independiente del estado de envío por email — una factura
@@ -2714,7 +2870,7 @@ function construirPdfFactura(data){
   const ASOCIACION_DIR = 'C/ El Cardón, 38 · 38260 Tejina - Tenerife · Islas Canarias · España';
   const ASOCIACION_INSCRIPCION = 'Nº Inscripción: 19973 (G1/S1/19973-14/TF)';
   const ASOCIACION_WEB_EMAIL = 'www.reyesmagosdetejina.com · reyesmagosdetejina@gmail.com';
-  const ASOCIACION_IBAN = 'ES87 0049 0465 1327 1047 2891';
+  const ASOCIACION_IBAN = 'ES67 0182 3286 7702 0156 8788';
 
   // Paleta tipo formulario: línea granate suave sobre fondo blanco, como
   // el modelo de referencia (recuadros redondeados, look de ficha/plantilla).
@@ -3010,6 +3166,7 @@ async function initAppData(){
   recalcTotal();
   await refreshNextNumberPreview();
   await loadSponsors();
+  cargarPlantillas();
 }
 
 window.toggleSortOrder = function(){
@@ -3166,7 +3323,7 @@ function renderInvoices(list, { searching = false } = {}){
       <td class="amount-cell">${formatCurrency(inv.total)} €</td>
       <td style="white-space:nowrap; padding-left:8px; padding-right:8px;"><div class="row-actions">
         <button class="icon-btn" title="Editar factura" onclick="openInvoiceEditModal('${inv.id}')">✎</button>
-        <button class="icon-btn" title="Reenviar email" onclick="resendInvoiceEmail('${inv.id}', this)">✉</button>
+        <button class="icon-btn" title="Enviar factura por email" onclick="resendInvoiceEmail('${inv.id}')">✉</button>
       </div></td>
     </tr>`;
   });
