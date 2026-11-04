@@ -556,6 +556,8 @@
   table.sponsors .sp-acc{display:flex; gap:6px; justify-content:flex-start; flex-wrap:nowrap;}
   table.sponsors .renov-pill{white-space:nowrap;}
   table.sponsors input[type=checkbox]{width:17px; height:17px; accent-color:var(--gold); cursor:pointer; vertical-align:middle;}
+  #update-check-btn.girando svg{animation:giro .8s linear infinite;}
+  @keyframes giro{to{transform:rotate(360deg);}}
   #update-banner{position:fixed; left:50%; bottom:20px; transform:translateX(-50%); z-index:9999; display:none; align-items:center; gap:14px; background:var(--ink); color:var(--paper); padding:12px 18px; border-radius:var(--radius); box-shadow:0 8px 24px -6px rgba(0,0,0,0.45); font-size:13px; max-width:92vw;}
   #update-banner.show{display:flex;}
   #update-banner button{background:var(--gold); color:#fff; border:none; border-radius:var(--radius); padding:7px 14px; cursor:pointer; font:inherit; font-weight:600;}
@@ -871,8 +873,11 @@
       </div>
     </div>
     <div style="display:flex; align-items:center; gap:18px;">
-      <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#FFFFFF; opacity:0.55; letter-spacing:0.05em; background:rgba(255,255,255,0.08); padding:3px 8px; border-radius:4px;">v023</span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#FFFFFF; opacity:0.55; letter-spacing:0.05em; background:rgba(255,255,255,0.08); padding:3px 8px; border-radius:4px;">v024</span>
       <span class="conn-status" id="conn-status-pill" title="Comprobando sincronización…"><span class="conn-dot" id="conn-dot"></span><span id="conn-text">Comprobando…</span><span class="sync-count" id="sync-count"></span></span>
+      <button class="welcome-reopen-btn" id="update-check-btn" onclick="buscarActualizacion()" title="Buscar una versión nueva de la app">
+        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      </button>
       <button class="welcome-reopen-btn" onclick="openWelcomeModal()" title="Ir a una sección">
         <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
       </button>
@@ -2095,9 +2100,35 @@ function versionActual(){
   const el = [...document.querySelectorAll('header span')].find(x => /^v\d{3}$/.test(x.textContent.trim()));
   return el ? parseInt(el.textContent.trim().slice(1), 10) : null;
 }
+// Recarga con una dirección distinta cada vez (?v=marca de tiempo): así ni la caché del navegador
+// ni la de GitHub Pages pueden servir la copia antigua.
 window.recargarNuevaVersion = function(){
-  const base = location.origin + location.pathname;
-  location.replace(base + '?v=' + (versionNuevaDetectada || Date.now()));
+  location.replace(location.origin + location.pathname + '?v=' + Date.now());
+};
+
+// Botón de la cabecera: busca ahora mismo si hay versión nueva publicada.
+window.buscarActualizacion = async function(){
+  const btn = document.getElementById('update-check-btn');
+  btn.classList.add('girando');
+  try{
+    const actual = versionActual();
+    const r = await fetch(location.pathname + '?_=' + Date.now(), { cache:'no-store' });
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    const m = (await r.text()).match(/>v(\d{3})</);
+    if(!m) throw new Error('no se pudo leer la versión publicada');
+    const remota = parseInt(m[1], 10);
+    if(actual !== null && remota > actual){
+      showToast(`Actualizando a la versión v${m[1]}…`);
+      setTimeout(recargarNuevaVersion, 600);
+      return;
+    }
+    showToast(`Ya tienes la última versión publicada (v${String(actual).padStart(3,'0')}). Si acabas de subir una nueva, espera 1-2 minutos y vuelve a pulsar.`);
+  }catch(e){
+    console.error(e);
+    showToast('No se pudo comprobar la versión: ' + e.message, true);
+  }finally{
+    btn.classList.remove('girando');
+  }
 };
 async function comprobarNuevaVersion(){
   try{
@@ -2117,7 +2148,7 @@ async function comprobarNuevaVersion(){
   }catch(e){ /* sin conexión: se ignora */ }
 }
 setTimeout(comprobarNuevaVersion, 4000);
-setInterval(comprobarNuevaVersion, 5*60*1000);
+setInterval(comprobarNuevaVersion, 2*60*1000);
 document.addEventListener('visibilitychange', () => { if(!document.hidden) comprobarNuevaVersion(); });
 
 // Se ejecuta al final del módulo (setTimeout) para que todas las funciones ya estén definidas
