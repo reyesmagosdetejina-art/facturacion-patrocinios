@@ -311,6 +311,7 @@
 
   main{max-width:820px; margin:0 auto; padding:36px 24px 80px;}
   main:has(#panel-patrocinadores.active){max-width:1240px;}
+  main:has(#panel-listado.active){max-width:1100px;}
 
   .tabs{display:flex; gap:4px; margin-bottom:28px; border-bottom:1px solid var(--paper-line);}
   .tab{
@@ -876,7 +877,7 @@
       </div>
     </div>
     <div style="display:flex; align-items:center; gap:18px;">
-      <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#FFFFFF; opacity:0.55; letter-spacing:0.05em; background:rgba(255,255,255,0.08); padding:3px 8px; border-radius:4px;">v025</span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#FFFFFF; opacity:0.55; letter-spacing:0.05em; background:rgba(255,255,255,0.08); padding:3px 8px; border-radius:4px;">v026</span>
       <span class="conn-status" id="conn-status-pill" title="Comprobando sincronización…"><span class="conn-dot" id="conn-dot"></span><span id="conn-text">Comprobando…</span><span class="sync-count" id="sync-count"></span></span>
       <button class="welcome-reopen-btn" id="update-check-btn" onclick="buscarActualizacion()" title="Buscar una versión nueva de la app">
         <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
@@ -1494,6 +1495,22 @@
   </div>
 </div>
 
+<!-- Modal envío de factura por WhatsApp -->
+<div class="modal-overlay" id="inv-wa-modal">
+  <div class="modal-box" style="max-width:600px;">
+    <h3>Enviar factura por WhatsApp <span id="iwa-numero" class="sp-mono" style="font-size:14px; color:var(--gold-deep);"></span></h3>
+    <div class="field"><label for="iwa-tel">Teléfono móvil</label><input type="text" id="iwa-tel"></div>
+    <div class="field"><label for="iwa-body">Mensaje</label><textarea id="iwa-body" rows="10" style="width:100%; font:inherit; padding:10px; border:1.5px solid var(--paper-line); border-radius:8px; background:var(--card); color:var(--ink); resize:vertical;"></textarea></div>
+    <p style="font-size:12.5px; color:var(--ink-soft); margin:4px 0 10px;">WhatsApp no permite adjuntar el PDF desde aquí: pulsa <b>1. Descargar PDF</b>, luego <b>2. Abrir WhatsApp</b> y adjunta el archivo descargado en la conversación. La factura se marcará sola como enviada al abrir WhatsApp.</p>
+    <div class="actions-row" style="margin-top:8px; flex-wrap:wrap;">
+      <button class="btn btn-gold" onclick="iwaDescargarPdf()">1. Descargar PDF</button>
+      <button class="btn btn-gold" onclick="iwaAbrirWhatsapp()">2. Abrir WhatsApp</button>
+      <button class="btn btn-ghost" onclick="iwaCopiar()">Copiar texto</button>
+      <button class="btn btn-ghost" onclick="closeInvWaModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal email patrocinio -->
 <div class="modal-overlay" id="email-modal">
   <div class="modal-box" style="max-width:640px;">
@@ -1936,13 +1953,19 @@ window.restaurarPlantillas = async function(){
   }
 };
 
+// Limpia un teléfono y lo deja en formato internacional (+34…). Acepta +34, 0034, 34 sin "+" o solo los 9 dígitos.
+window.telefonoInternacional = function(tel){
+  const t = String(tel || '').replace(/[\s\-\(\)\.]/g, '');
+  if(t.startsWith('+')) return t;
+  if(t.startsWith('00')) return '+' + t.slice(2);
+  if(/^34\d{9}$/.test(t)) return '+' + t;
+  return '+34' + t;
+};
 window.esMovil = function(tel){
   if(!tel) return false;
-  let t = String(tel).replace(/[\s\-\(\)\.]/g,'');
-  if(t.startsWith('+34')) t = t.slice(3);
-  else if(t.startsWith('0034')) t = t.slice(4);
-  else if(t.startsWith('+') || t.startsWith('00')) return /^(\+|00)\d{8,14}$/.test(t);
-  return /^[67]\d{8}$/.test(t);
+  const t = window.telefonoInternacional(tel);
+  if(t.startsWith('+34')) return /^\+34[67]\d{8}$/.test(t);   // España: los móviles empiezan por 6 o 7
+  return /^\+\d{8,14}$/.test(t);                              // otros países: se acepta
 };
 
 let emailSponsorId = null;
@@ -1977,11 +2000,9 @@ window.emailCopiar = function(){
 // ---------------- WHATSAPP PATROCINIO ----------------
 window.abrirWhatsappPatrocinio = function(telefono){
   // Limpiar el teléfono: quitar espacios, guiones y paréntesis
-  const tel = telefono.replace(/[\s\-\(\)]/g, '');
-  // Añadir prefijo internacional si empieza por 6 o 7 (España)
-  const telInt = tel.startsWith('+') ? tel : (tel.startsWith('00') ? '+' + tel.slice(2) : '+34' + tel);
+  const telInt = telefonoInternacional(telefono);
 
-  const spWa = sponsorsCache.find(x => (x.telefono || '').replace(/\s+/g,'') === telefono);
+  const spWa = sponsorsCache.find(x => (x.telefono || '').replace(/\s+/g,'') === telefono.replace(/\s+/g,''));
   const mensaje = rellenarPlantilla(plantillas.patrocinio.cuerpo, { nombre: spWa ? nombreVisible(spWa) : '' });
 
   const url = `https://wa.me/${telInt}?text=${encodeURIComponent(mensaje)}`;
@@ -2868,6 +2889,58 @@ async function marcarEnviadaAlAbrirCorreo(){
   }
 }
 
+// ---- WhatsApp de la factura (solo móviles) ----
+let invWaCtx = null;
+
+// El teléfono se toma de la factura y, si no lo trae, del patrocinador (por CIF o nombre).
+function telefonoDeFactura(inv){
+  const p = inv.patrocinador || {};
+  if(p.telefono) return p.telefono;
+  const norm = x => String(x || '').replace(/[\s\-\.]/g,'').toLowerCase();
+  const sp = sponsorsCache.find(x => (p.cif && norm(x.cif) === norm(p.cif)) || (x.nombre && x.nombre === p.nombre));
+  return sp?.telefono || '';
+}
+window.abrirWhatsappFactura = function(invId){
+  const inv = invoicesCache.find(i => i.id === invId);
+  if(!inv) return;
+  const tel = telefonoDeFactura(inv);
+  if(!esMovil(tel)){ showToast('Esta factura no tiene un teléfono móvil válido.', true); return; }
+  invWaCtx = { inv, docId: inv.id };
+  document.getElementById('iwa-numero').textContent = inv.numero || '';
+  document.getElementById('iwa-tel').value = tel;
+  document.getElementById('iwa-body').value = textoCorreoFactura(inv);
+  document.getElementById('inv-wa-modal').classList.add('show');
+};
+window.closeInvWaModal = function(){ document.getElementById('inv-wa-modal').classList.remove('show'); };
+window.iwaDescargarPdf = function(){
+  if(!invWaCtx) return;
+  try{
+    construirPdfFactura(invWaCtx.inv).save(nombreArchivoFactura(invWaCtx.inv));
+    showToast('PDF descargado. Adjúntalo en la conversación de WhatsApp.');
+  }catch(e){ console.error(e); showToast('No se pudo generar el PDF: ' + e.message, true); }
+};
+window.iwaAbrirWhatsapp = async function(){
+  if(!invWaCtx) return;
+  const tel = document.getElementById('iwa-tel').value;
+  if(!esMovil(tel)){ showToast('El teléfono no es un móvil válido.', true); return; }
+  const texto = document.getElementById('iwa-body').value;
+  window.open(`https://wa.me/${telefonoInternacional(tel).replace('+','')}?text=${encodeURIComponent(texto)}`, '_blank');
+  const { inv, docId } = invWaCtx;
+  if(inv.estado !== 'enviada'){
+    try{
+      await guardarEstadoEnvio(docId, 'enviada');
+      inv.estado = 'enviada';
+      showToast(`Factura ${inv.numero} marcada como enviada. Si al final no la envías, pulsa su círculo de estado para revertirlo.`);
+    }catch(e){ console.error(e); showToast('No se pudo marcar como enviada: ' + e.message, true); }
+  }
+};
+window.iwaCopiar = function(){
+  const t = document.getElementById('iwa-body').value;
+  (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(
+    () => showToast('Texto copiado'),
+    () => { const a = document.getElementById('iwa-body'); a.select(); document.execCommand('copy'); showToast('Texto copiado'); });
+};
+
 window.iemDescargarPdf = function(){
   if(!invEmailCtx) return;
   try{
@@ -3405,6 +3478,7 @@ function renderInvoices(list, { searching = false } = {}){
       <td class="amount-cell">${formatCurrency(inv.total)} €</td>
       <td style="white-space:nowrap; padding-left:8px; padding-right:8px;"><div class="row-actions">
         <button class="icon-btn" title="Editar factura" onclick="openInvoiceEditModal('${inv.id}')">✎</button>
+        ${esMovil(telefonoDeFactura(inv)) ? `<button class="icon-btn icon-btn-whatsapp" title="Enviar factura por WhatsApp" onclick="abrirWhatsappFactura('${inv.id}')"><svg viewBox="0 0 24 24" fill="currentColor" style="width:15px;height:15px;"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M11.99 0C5.373 0 0 5.373 0 11.99c0 2.117.555 4.1 1.523 5.823L0 24l6.335-1.493A11.943 11.943 0 0 0 11.99 24C18.606 24 24 18.626 24 11.99 24 5.373 18.606 0 11.99 0zm0 21.818a9.808 9.808 0 0 1-5.001-1.371l-.359-.214-3.721.876.893-3.633-.234-.374A9.789 9.789 0 0 1 2.18 11.99c0-5.414 4.396-9.81 9.81-9.81 5.413 0 9.81 4.396 9.81 9.81 0 5.414-4.397 9.828-9.81 9.828z"/></svg></button>` : '<span style="width:30px;height:30px;display:inline-block;"></span>'}
         <button class="icon-btn" title="Enviar factura por email" onclick="resendInvoiceEmail('${inv.id}')">✉</button>
       </div></td>
     </tr>`;
