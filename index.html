@@ -886,7 +886,7 @@
       </div>
     </div>
     <div style="display:flex; align-items:center; gap:18px;">
-      <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#FFFFFF; opacity:0.55; letter-spacing:0.05em; background:rgba(255,255,255,0.08); padding:3px 8px; border-radius:4px;">v027</span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#FFFFFF; opacity:0.55; letter-spacing:0.05em; background:rgba(255,255,255,0.08); padding:3px 8px; border-radius:4px;">v028</span>
       <span class="conn-status" id="conn-status-pill" title="Comprobando sincronización…"><span class="conn-dot" id="conn-dot"></span><span id="conn-text">Comprobando…</span><span class="sync-count" id="sync-count"></span></span>
       <button class="welcome-reopen-btn" id="update-check-btn" onclick="buscarActualizacion()" title="Buscar una versión nueva de la app">
         <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
@@ -1099,8 +1099,13 @@
           </button>
         </div>
 
-        <div class="field" style="max-width:420px;">
-          <div class="search-wrap" id="invoice-search-wrap">
+        <div class="field" style="max-width:none; display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+          <select id="invoice-pago-filter" onchange="applyInvoiceFilter()" title="Filtrar por estado de cobro" style="padding:9px 12px; border:1px solid var(--paper-line); border-radius:6px; background:#fff; font:inherit;">
+            <option value="todas">Todas (cobradas y no cobradas)</option>
+            <option value="pendientes">No cobradas</option>
+            <option value="cobradas">Cobradas</option>
+          </select>
+          <div class="search-wrap" id="invoice-search-wrap" style="flex:1; min-width:240px; max-width:420px;">
             <input type="text" id="invoice-search" placeholder="Buscar por número, patrocinador, concepto, fecha, importe, estado…" oninput="onInvoiceSearchInput(); updateSearchClear('invoice-search-wrap', this)">
             <button class="search-clear" title="Limpiar búsqueda" onclick="clearSearch('invoice-search-wrap', 'invoice-search', 'invoice')">×</button>
           </div>
@@ -2865,7 +2870,7 @@ async function guardarEstadoEnvio(invId, estado){
     if(f) f.estado = estado;
   });
   if(document.getElementById('panel-listado')?.classList.contains('active') || document.getElementById('invoices-container')?.offsetParent){
-    renderInvoices(invoicesCache, { searching: document.getElementById('invoice-search')?.value.trim().length > 0 });
+    applyInvoiceFilter();
   }
 }
 
@@ -3008,7 +3013,7 @@ window.toggleInvoicePaid = async function(invoiceId, nuevoValor){
   // Actualización optimista: refleja el cambio al instante en la interfaz,
   // y si falla al guardar en el servidor, se revierte y se avisa.
   inv.pagada = nuevoValor;
-  renderInvoices(invoicesCache, { searching: document.getElementById('invoice-search')?.value.trim().length > 0 });
+  applyInvoiceFilter();
 
   try{
     await updateDoc(doc(db, 'facturas', invoiceId), { pagada: nuevoValor });
@@ -3018,7 +3023,7 @@ window.toggleInvoicePaid = async function(invoiceId, nuevoValor){
   } catch(e){
     console.error(e);
     inv.pagada = !nuevoValor; // revertir el cambio optimista
-    renderInvoices(invoicesCache, { searching: document.getElementById('invoice-search')?.value.trim().length > 0 });
+    applyInvoiceFilter();
     showToast('Error al actualizar el estado de pago: ' + e.message, true);
   }
 }
@@ -3370,18 +3375,19 @@ async function loadInvoices(year){
 
 // Decide qué mostrar: si hay texto de búsqueda, busca en TODAS las facturas
 // (todos los años) por cualquier campo; si no, aplica el filtro de año normal.
+window.applyInvoiceFilter = applyInvoiceFilter;
 function applyInvoiceFilter(){
   const term = document.getElementById('invoice-search')?.value.trim().toLowerCase() || '';
   const yearBar = document.getElementById('year-bar');
+  const pago = document.getElementById('invoice-pago-filter')?.value || 'todas';
+  const porPago = inv => pago === 'todas' || (pago === 'cobradas' ? !!inv.pagada : !inv.pagada);
 
   if(term){
     if(yearBar) yearBar.style.opacity = '0.4';
-    const results = allInvoicesCache.filter(inv => invoiceMatchesSearch(inv, term));
-    renderInvoices(results, { searching: true });
+    renderInvoices(allInvoicesCache.filter(inv => invoiceMatchesSearch(inv, term) && porPago(inv)), { searching: true, pago });
   } else {
     if(yearBar) yearBar.style.opacity = '1';
-    const filtered = allInvoicesCache.filter(inv => inv.anio === currentYearFilter);
-    renderInvoices(filtered, { searching: false });
+    renderInvoices(allInvoicesCache.filter(inv => inv.anio === currentYearFilter && porPago(inv)), { searching: false, pago });
   }
 }
 
@@ -3434,7 +3440,7 @@ function renderYearBar(){
   });
 }
 
-function renderInvoices(list, { searching = false } = {}){
+function renderInvoices(list, { searching = false, pago = 'todas' } = {}){
   const container = document.getElementById('invoices-container');
   const totalsStrip = document.getElementById('totals-strip');
   invoicesCache = list; // caché para poder editar sin volver a consultar Firestore
@@ -3447,7 +3453,9 @@ function renderInvoices(list, { searching = false } = {}){
   if(resetYearLabel) resetYearLabel.textContent = currentYearFilter;
 
   if(list.length === 0){
-    const mensaje = searching
+    const mensaje = pago !== 'todas'
+      ? `No hay facturas ${pago === 'cobradas' ? 'cobradas' : 'pendientes de cobro'} con este filtro.`
+      : searching
       ? 'Sin resultados para esa búsqueda.'
       : `Todavía no hay facturas registradas para ${currentYearFilter}.`;
     container.innerHTML = `<div class="empty-state"><div class="glyph">§</div><p>${mensaje}</p></div>`;
@@ -3506,7 +3514,7 @@ function renderInvoices(list, { searching = false } = {}){
   const sumCob = cob.reduce((a,i) => a + (i.total || 0), 0);
   const pend = list.length - cob.length;
   const pct = list.length ? Math.round(cob.length / list.length * 100) : 0;
-  const alcance = searching ? 'Resultado de la búsqueda' : `Año ${currentYearFilter}`;
+  const alcance = (searching ? 'Resultado de la búsqueda' : `Año ${currentYearFilter}`) + (pago === 'cobradas' ? ' · solo cobradas' : pago === 'pendientes' ? ' · solo no cobradas' : '');
   const st = document.getElementById('inv-stats');
   if(st){
     st.innerHTML = `
