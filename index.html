@@ -787,6 +787,15 @@
   html[data-theme="dark"] #theme-toggle-btn .theme-icon-sun{display:none;}
   html[data-theme="dark"] #theme-toggle-btn .theme-icon-moon{display:block;}
 
+  .inv-stats{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:6px 0 18px;}
+  .inv-stat{border:1px solid var(--paper-line); border-radius:8px; padding:14px 18px; background:#FFFDF8; border-left:4px solid var(--gold,#B8913A);}
+  .inv-stat.cobradas{border-left-color:#2E7D4F;}
+  .inv-stat .t{font-family:'IBM Plex Mono',monospace; font-size:10.5px; text-transform:uppercase; letter-spacing:0.06em; color:var(--ink-soft);}
+  .inv-stat .n{font-family:'Fraunces',serif; font-size:28px; font-weight:600; color:var(--ink); line-height:1.2; margin-top:4px;}
+  .inv-stat .n small{font-size:14px; font-weight:400; color:var(--ink-soft);}
+  .inv-stat .i{font-family:'IBM Plex Mono',monospace; font-size:15px; color:var(--ink); margin-top:2px;}
+  .inv-stat .s{font-size:12px; color:var(--ink-soft); margin-top:6px;}
+  @media (max-width:640px){ .inv-stats{grid-template-columns:1fr;} }
   .totals-strip{display:flex; gap:28px; margin-top:22px; padding-top:18px; border-top:1px solid var(--paper-line); flex-wrap:wrap;}
   .totals-strip .stat{display:flex; flex-direction:column;}
   .totals-strip .stat .n{font-family:'Fraunces',serif; font-size:26px; font-weight:600; color:var(--ink);}
@@ -877,7 +886,7 @@
       </div>
     </div>
     <div style="display:flex; align-items:center; gap:18px;">
-      <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#FFFFFF; opacity:0.55; letter-spacing:0.05em; background:rgba(255,255,255,0.08); padding:3px 8px; border-radius:4px;">v026</span>
+      <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#FFFFFF; opacity:0.55; letter-spacing:0.05em; background:rgba(255,255,255,0.08); padding:3px 8px; border-radius:4px;">v027</span>
       <span class="conn-status" id="conn-status-pill" title="Comprobando sincronización…"><span class="conn-dot" id="conn-dot"></span><span id="conn-text">Comprobando…</span><span class="sync-count" id="sync-count"></span></span>
       <button class="welcome-reopen-btn" id="update-check-btn" onclick="buscarActualizacion()" title="Buscar una versión nueva de la app">
         <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
@@ -1134,6 +1143,8 @@
             </button>
           </div>
         </details>
+
+        <div class="inv-stats" id="inv-stats" style="display:none;"></div>
 
         <div id="invoices-container">
           <div class="empty-state">
@@ -3441,6 +3452,7 @@ function renderInvoices(list, { searching = false } = {}){
       : `Todavía no hay facturas registradas para ${currentYearFilter}.`;
     container.innerHTML = `<div class="empty-state"><div class="glyph">§</div><p>${mensaje}</p></div>`;
     totalsStrip.style.display = 'none';
+    const st0 = document.getElementById('inv-stats'); if(st0) st0.style.display = 'none';
     return;
   }
 
@@ -3488,7 +3500,30 @@ function renderInvoices(list, { searching = false } = {}){
 
   document.getElementById('stat-count').textContent = list.length;
   document.getElementById('stat-total').textContent = formatCurrency(sum) + ' €';
-  totalsStrip.style.display = 'flex';
+  totalsStrip.style.display = 'none'; // sustituida por las tarjetas estadísticas
+
+  const cob = list.filter(i => i.pagada);
+  const sumCob = cob.reduce((a,i) => a + (i.total || 0), 0);
+  const pend = list.length - cob.length;
+  const pct = list.length ? Math.round(cob.length / list.length * 100) : 0;
+  const alcance = searching ? 'Resultado de la búsqueda' : `Año ${currentYearFilter}`;
+  const st = document.getElementById('inv-stats');
+  if(st){
+    st.innerHTML = `
+      <div class="inv-stat">
+        <div class="t">Facturas emitidas</div>
+        <div class="n">${list.length} <small>${list.length === 1 ? 'factura' : 'facturas'}</small></div>
+        <div class="i">${formatCurrency(sum)} €</div>
+        <div class="s">${alcance}</div>
+      </div>
+      <div class="inv-stat cobradas">
+        <div class="t">Facturas cobradas</div>
+        <div class="n">${cob.length} <small>${cob.length === 1 ? 'factura' : 'facturas'} · ${pct}%</small></div>
+        <div class="i">${formatCurrency(sumCob)} €</div>
+        <div class="s">Pendientes de cobro: ${pend} · ${formatCurrency(sum - sumCob)} €</div>
+      </div>`;
+    st.style.display = 'grid';
+  }
 }
 
 // ---------------- SELECCIÓN MÚLTIPLE DE FACTURAS (para descarga manual en PDF) ----------------
